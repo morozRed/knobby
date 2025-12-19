@@ -117,7 +117,7 @@ struct SensoryWallView: View {
         let drawPathHeight: CGFloat = 110
 
         return ScrollView(showsIndicators: false) {
-            VStack(spacing: spacing) {
+            LazyVStack(spacing: spacing) {
                 // Row 1: Main Knob (hero, FREE) + Theme Toggle (FREE)
                 HStack(spacing: spacing) {
                     NeumorphicCell(
@@ -471,13 +471,8 @@ struct PopFromSurface: ViewModifier {
 struct NoiseTextureView: View {
     let isDarkMode: Bool
 
-    // Pre-seeded random positions computed once at init
-    private let grainPoints: [(x: CGFloat, y: CGFloat, opacity: Double, size: CGFloat)]
-
-    init(isDarkMode: Bool) {
-        self.isDarkMode = isDarkMode
-
-        // Use a seeded random generator for consistent results
+    // Pre-seeded random positions computed once and reused across instances.
+    private static let grainPoints: [(x: CGFloat, y: CGFloat, opacity: Double, size: CGFloat)] = {
         var rng = SeededRandomGenerator(seed: 42)
         var points: [(x: CGFloat, y: CGFloat, opacity: Double, size: CGFloat)] = []
         points.reserveCapacity(200) // Reduced from 400 - still provides texture with less overhead
@@ -490,14 +485,14 @@ struct NoiseTextureView: View {
                 size: CGFloat.random(in: 0.5...1.2, using: &rng)
             ))
         }
-        self.grainPoints = points
-    }
+        return points
+    }()
 
     var body: some View {
         Canvas { context, size in
             let grainColor: Color = isDarkMode ? .white : .black
 
-            for point in grainPoints {
+            for point in Self.grainPoints {
                 let x = point.x * size.width
                 let y = point.y * size.height
 

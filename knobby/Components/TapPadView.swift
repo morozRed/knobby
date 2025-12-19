@@ -9,7 +9,7 @@ struct TapPadView: View {
     var themeManager: ThemeManager?
 
     @State private var ripples: [Ripple] = []
-    @State private var tapLocations: [CGPoint] = []
+    @State private var tapLocations: [TapLocation] = []
 
     private let padWidth: CGFloat = 340
     private let padHeight: CGFloat = 110
@@ -20,6 +20,11 @@ struct TapPadView: View {
         var scale: CGFloat = 0.3
         var opacity: Double = 0.8
         var isActive: Bool = true
+    }
+
+    struct TapLocation: Identifiable {
+        let id = UUID()
+        var location: CGPoint
     }
 
     // Theme-aware colors
@@ -183,11 +188,11 @@ struct TapPadView: View {
     // MARK: - Touch Feedback Dots
 
     private var touchFeedbackDots: some View {
-        ForEach(tapLocations.indices, id: \.self) { index in
+        ForEach(tapLocations) { tapLocation in
             Circle()
                 .fill(KnobbyColors.accent.opacity(0.6))
                 .frame(width: 8, height: 8)
-                .position(tapLocations[index])
+                .position(tapLocation.location)
                 .transition(.scale.combined(with: .opacity))
         }
     }
@@ -205,9 +210,14 @@ struct TapPadView: View {
                 let clampedLocation = CGPoint(x: clampedX, y: clampedY)
 
                 // Add touch indicator
-                if tapLocations.isEmpty || distance(from: tapLocations.last!, to: clampedLocation) > 15 {
+                if tapLocations.isEmpty || distance(from: tapLocations.last!.location, to: clampedLocation) > 15 {
                     withAnimation(.easeOut(duration: 0.1)) {
-                        tapLocations.append(clampedLocation)
+                        tapLocations.append(TapLocation(location: clampedLocation))
+
+                        // Limit stored locations
+                        if tapLocations.count > 5 {
+                            tapLocations.removeFirst()
+                        }
                     }
 
                     // Trigger ripple
@@ -216,10 +226,6 @@ struct TapPadView: View {
                     // Haptic feedback
                     hapticEngine.playDetent()
 
-                    // Limit stored locations
-                    if tapLocations.count > 5 {
-                        tapLocations.removeFirst()
-                    }
                 }
             }
             .onEnded { _ in

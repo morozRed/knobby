@@ -14,6 +14,7 @@ struct PurchaseSheetView: View {
 
     /// Reference to purchase manager
     private var purchaseManager: PurchaseManager { PurchaseManager.shared }
+    private let privacyPolicyURL = URL(string: "https://knobby.app/policy")!
 
     @State private var isPurchaseButtonPressed = false
     @State private var purchaseButtonDepth: CGFloat = 0
@@ -335,28 +336,35 @@ struct PurchaseSheetView: View {
     // MARK: - Bottom Buttons
 
     private var bottomButtons: some View {
-        HStack(spacing: 24) {
-            // Restore button
-            Button {
-                hapticEngine?.playDetent()
-                performRestore()
-            } label: {
-                Text("Restore")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(textSecondary.opacity(0.7))
-            }
-            .buttonStyle(.plain)
+        VStack(spacing: 10) {
+            HStack(spacing: 24) {
+                // Restore button
+                Button {
+                    hapticEngine?.playDetent()
+                    performRestore()
+                } label: {
+                    Text("Restore")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(textSecondary.opacity(0.7))
+                }
+                .buttonStyle(.plain)
 
-            // Dismiss button
-            Button {
-                hapticEngine?.playDetent()
-                dismiss()
-            } label: {
-                Text("Not now")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(textSecondary.opacity(0.7))
+                // Dismiss button
+                Button {
+                    hapticEngine?.playDetent()
+                    dismiss()
+                } label: {
+                    Text("Not now")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(textSecondary.opacity(0.7))
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
+
+            Link("Privacy Policy", destination: privacyPolicyURL)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(textSecondary.opacity(0.7))
+                .buttonStyle(.plain)
         }
         .opacity(appeared ? 1 : 0)
     }
