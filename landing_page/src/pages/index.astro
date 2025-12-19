@@ -1,0 +1,264 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Knobby — A tactile space for idle hands">
+  <main>
+    <div class="hero">
+      <div class="knob-container">
+        <div class="knob-shadow"></div>
+        <div class="knob-base">
+          <div class="knob-face" id="knob">
+            <div class="knob-inner"></div>
+            <div class="indicator"></div>
+          </div>
+        </div>
+      </div>
+
+      <h1>Knobby</h1>
+      <p class="tagline">A tactile space for idle hands</p>
+
+      <a href="#" class="app-store-badge" aria-label="Download on the App Store">
+        <img src="/download.svg" alt="Download on the App Store" width="120" height="40" />
+      </a>
+    </div>
+
+    <footer>
+      <nav>
+        <a href="/privacy">Privacy</a>
+        <span class="divider"></span>
+        <a href="/terms">Terms</a>
+      </nav>
+    </footer>
+  </main>
+</Layout>
+
+<style>
+  main {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+  }
+
+  .hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: auto;
+    margin-top: auto;
+  }
+
+  .knob-container {
+    width: 140px;
+    height: 140px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .knob-shadow {
+    position: absolute;
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: radial-gradient(
+      ellipse 100% 100% at 50% 50%,
+      rgba(0, 0, 0, 0.12) 0%,
+      rgba(0, 0, 0, 0.08) 40%,
+      transparent 70%
+    );
+    transform: translateY(12px);
+    filter: blur(8px);
+    pointer-events: none;
+  }
+
+  .knob-base {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: linear-gradient(
+      180deg,
+      #FAFAF9 0%,
+      #E7E5E4 50%,
+      #D6D3D1 100%
+    );
+    padding: 4px;
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+
+  .knob-face {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(
+      180deg,
+      #F5F5F4 0%,
+      #E7E5E4 40%,
+      #DFDCDA 100%
+    );
+    position: relative;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+    box-shadow:
+      inset 0 2px 4px rgba(255, 255, 255, 0.8),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.04),
+      0 1px 2px rgba(0, 0, 0, 0.06);
+  }
+
+  .knob-face:active {
+    cursor: grabbing;
+  }
+
+  .knob-inner {
+    position: absolute;
+    inset: 12px;
+    border-radius: 50%;
+    background: linear-gradient(
+      180deg,
+      #ECECEA 0%,
+      #E2E0DE 100%
+    );
+    box-shadow:
+      inset 0 1px 2px rgba(255, 255, 255, 0.6),
+      inset 0 -1px 2px rgba(0, 0, 0, 0.03),
+      0 0 0 1px rgba(0, 0, 0, 0.02);
+    pointer-events: none;
+  }
+
+  .knob-inner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(
+      ellipse 80% 50% at 50% 15%,
+      rgba(255, 255, 255, 0.5) 0%,
+      transparent 60%
+    );
+  }
+
+  .indicator {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 3px;
+    height: 10px;
+    background: linear-gradient(180deg, #C9A77C 0%, #A08060 100%);
+    border-radius: 1.5px;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      0 1px 1px rgba(0, 0, 0, 0.15);
+  }
+
+  h1 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 2.5rem;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  .tagline {
+    font-size: 1rem;
+    color: var(--text-muted);
+    margin-top: -0.5rem;
+  }
+
+  .app-store-badge {
+    margin-top: 0.5rem;
+    opacity: 0.9;
+    transition: opacity 0.2s ease;
+  }
+
+  .app-store-badge:hover {
+    opacity: 1;
+    text-decoration: none;
+  }
+
+  .app-store-badge img {
+    width: 140px;
+    height: auto;
+  }
+
+  footer {
+    margin-top: auto;
+    padding-top: 4rem;
+  }
+
+  footer nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+  }
+
+  footer nav a {
+    color: var(--text-muted);
+  }
+
+  .divider {
+    width: 1px;
+    height: 12px;
+    background: var(--border);
+  }
+</style>
+
+<script>
+  const knobFace = document.getElementById('knob');
+  const knobBase = knobFace?.parentElement;
+  let rotation = 0;
+  let isDragging = false;
+  let startAngle = 0;
+  let startRotation = 0;
+
+  function getAngle(e: MouseEvent | Touch, rect: DOMRect): number {
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const clientX = 'clientX' in e ? e.clientX : 0;
+    const clientY = 'clientY' in e ? e.clientY : 0;
+    return Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI);
+  }
+
+  function handleStart(e: MouseEvent | TouchEvent) {
+    isDragging = true;
+    const rect = knobBase!.getBoundingClientRect();
+    const event = 'touches' in e ? e.touches[0] : e;
+    startAngle = getAngle(event, rect);
+    startRotation = rotation;
+  }
+
+  function handleMove(e: MouseEvent | TouchEvent) {
+    if (!isDragging) return;
+    const rect = knobBase!.getBoundingClientRect();
+    const event = 'touches' in e ? e.touches[0] : e;
+    const currentAngle = getAngle(event, rect);
+    let delta = currentAngle - startAngle;
+
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
+
+    rotation = startRotation + delta;
+    knobFace!.style.transform = `rotate(${rotation}deg)`;
+  }
+
+  function handleEnd() {
+    isDragging = false;
+  }
+
+  knobBase?.addEventListener('mousedown', handleStart);
+  knobBase?.addEventListener('touchstart', handleStart, { passive: true });
+  document.addEventListener('mousemove', handleMove);
+  document.addEventListener('touchmove', handleMove, { passive: true });
+  document.addEventListener('mouseup', handleEnd);
+  document.addEventListener('touchend', handleEnd);
+</script>

@@ -1,0 +1,93 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Privacy Policy — Knobby" description="Privacy Policy for Knobby">
+  <main>
+    <article>
+      <a href="/" class="back">Knobby</a>
+
+      <h1>Privacy Policy</h1>
+      <p class="updated">Last updated: December 2024</p>
+
+      <section>
+        <h2>Data Collection</h2>
+        <p>Knobby does not collect, store, or transmit any personal data. The app operates entirely on your device.</p>
+      </section>
+
+      <section>
+        <h2>Analytics</h2>
+        <p>We do not use analytics or tracking of any kind.</p>
+      </section>
+
+      <section>
+        <h2>Third Parties</h2>
+        <p>We do not share data with third parties because we do not collect any data.</p>
+      </section>
+
+      <section>
+        <h2>Contact</h2>
+        <p>Questions? Email <a href="mailto:grig@moroz.com">grig@moroz.com</a></p>
+        <p class="address">Carrer de Pallars, Barcelona, Spain</p>
+      </section>
+    </article>
+  </main>
+</Layout>
+
+<style>
+  main {
+    min-height: 100dvh;
+    padding: 4rem 2rem;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .back {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: var(--text);
+    display: inline-block;
+    margin-bottom: 3rem;
+  }
+
+  h1 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 1.75rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+
+  .updated {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    margin-bottom: 3rem;
+  }
+
+  section {
+    margin-bottom: 2rem;
+  }
+
+  h2 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    color: var(--text);
+  }
+
+  section a {
+    color: var(--accent);
+  }
+
+  .address {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+  }
+</style>
