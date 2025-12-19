@@ -118,7 +118,6 @@ struct NeumorphicCell<Content: View>: View {
                 x: 8,
                 y: 12
             )
-            .drawingGroup()
     }
 
     // MARK: - Lock Overlay
