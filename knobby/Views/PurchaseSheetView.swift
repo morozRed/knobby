@@ -6,6 +6,7 @@ struct PurchaseSheetView: View {
     @Environment(\.dismiss) private var dismiss
 
     var themeManager: ThemeManager?
+    var motionManager: MotionManager?
     var hapticEngine: HapticEngine?
     var soundEngine: SoundEngine?
 
@@ -85,6 +86,16 @@ struct PurchaseSheetView: View {
     private var keycapSideColor: Color {
         isDarkMode ? Color(hex: 0x2A2A2C) : Color(hex: 0xD0D0D0)
     }
+
+    // Dynamic tilt properties (matching MechanicalKeycapView)
+    private var tiltX: Double { motionManager?.tiltX ?? 0 }
+    private var tiltY: Double { motionManager?.tiltY ?? 0 }
+    private var reduceMotion: Bool { motionManager?.reduceMotion ?? true }
+
+    // 3D keycap depth constants (matching MechanicalKeycapView)
+    private let keycapDepthLayer: CGFloat = 8
+    private let taperPerLayer: CGFloat = 2
+    private let parallaxStrength: CGFloat = 4
 
     var body: some View {
         ZStack {
@@ -243,16 +254,52 @@ struct PurchaseSheetView: View {
     private let maxTravel: CGFloat = 4
 
     private var purchaseButton: some View {
-        ZStack {
+        // Calculate parallax offset based on tilt (matching MechanicalKeycapView)
+        let parallaxX = reduceMotion ? 0 : CGFloat(tiltX) * parallaxStrength * 2.5
+        let parallaxY = reduceMotion ? 0 : CGFloat(-tiltY) * parallaxStrength * 2.5
+
+        // Light direction affects which edges appear lit vs shadowed
+        let lightAngleX = reduceMotion ? 0.3 : 0.3 - tiltX * 0.5
+        let lightAngleY = reduceMotion ? 0.3 : 0.3 + tiltY * 0.5
+
+        return ZStack {
             // LED underglow (beneath everything) - warm amber glow
             ledUnderglow
 
             // Switch housing / plate
             keycapSwitchHousing
 
-            // The keycap itself
-            purchaseKeycap
+            // === LAYER 1: Bottom/Base layer (largest, creates visible sides) ===
+            purchaseKeycapBaseLayer(lightAngleX: lightAngleX, lightAngleY: lightAngleY)
+                .offset(
+                    x: parallaxX * 0.8,
+                    y: parallaxY * 0.8 + purchaseButtonDepth
+                )
+
+            // === LAYER 2: Middle body layer ===
+            purchaseKeycapMiddleLayer(lightAngleX: lightAngleX, lightAngleY: lightAngleY)
+                .offset(
+                    x: parallaxX * 0.4,
+                    y: -keycapDepthLayer * 0.4 + parallaxY * 0.4 + purchaseButtonDepth
+                )
+
+            // === LAYER 3: Top surface (smallest, the dished top) ===
+            purchaseKeycapTopLayer(lightAngleX: lightAngleX, lightAngleY: lightAngleY)
+                .offset(
+                    x: parallaxX * 0.15,
+                    y: -keycapDepthLayer * 0.75 + parallaxY * 0.15 + purchaseButtonDepth
+                )
+
+            // === LEGEND ===
+            purchaseKeycapLegend
+                .offset(
+                    x: parallaxX * 0.1,
+                    y: -keycapDepthLayer * 0.75 + parallaxY * 0.1 + purchaseButtonDepth
+                )
         }
+        .offset(x: wobbleOffset)
+        .animation(.interpolatingSpring(stiffness: 800, damping: 15), value: purchaseButtonDepth)
+        .animation(.interpolatingSpring(stiffness: 1000, damping: 10), value: wobbleOffset)
         .frame(width: keycapWidth + 24, height: keycapHeight + 28)
         .opacity(appeared ? 1 : 0)
         .scaleEffect(appeared ? 1 : 0.9)
@@ -328,115 +375,146 @@ struct PurchaseSheetView: View {
         .offset(y: 8)
     }
 
-    // MARK: - Purchase Keycap
+    // MARK: - Base Layer (Shows the physical sides)
 
-    private var purchaseKeycap: some View {
-        ZStack {
-            // Keycap base (bottom edge - creates 3D depth)
-            purchaseKeycapBase
+    private func purchaseKeycapBaseLayer(lightAngleX: Double, lightAngleY: Double) -> some View {
+        // Base is slightly larger - the visible rim IS the "side" of the keycap
+        let baseWidth = keycapWidth + taperPerLayer * 2
+        let baseHeight = keycapHeight + taperPerLayer * 2
 
-            // Keycap body (the main visible part)
-            purchaseKeycapBody
+        // Colors for the base layer - darker, showing physical depth
+        let baseColor = isDarkMode ? Color(hex: 0x252528) : Color(hex: 0xB8B8BC)
+        let baseLitEdge = isDarkMode ? Color(hex: 0x404045) : Color(hex: 0xD0D0D4)
+        let baseShadowEdge = isDarkMode ? Color(hex: 0x18181A) : Color(hex: 0x909094)
 
-            // Top surface with dish
-            purchaseKeycapTop
-
-            // Legend (price + text)
-            purchaseKeycapLegend
-        }
-        .offset(y: -keycapDepth / 2 + purchaseButtonDepth)
-        .offset(x: wobbleOffset)
-        .animation(.interpolatingSpring(stiffness: 800, damping: 15), value: purchaseButtonDepth)
-        .animation(.interpolatingSpring(stiffness: 1000, damping: 10), value: wobbleOffset)
-    }
-
-    private var purchaseKeycapBase: some View {
-        RoundedRectangle(cornerRadius: keycapCornerRadius + 1)
-            .fill(keycapSideColor)
-            .frame(width: keycapWidth, height: keycapHeight)
-            .shadow(
-                color: shadowDark.opacity(isDarkMode ? 0.8 : 0.5),
-                radius: 5,
-                x: 0,
-                y: 5
-            )
-    }
-
-    private var purchaseKeycapBody: some View {
-        ZStack {
-            // Main body with side gradient (shows depth)
-            RoundedRectangle(cornerRadius: keycapCornerRadius)
+        return ZStack {
+            // Main base shape with directional lighting gradient
+            RoundedRectangle(cornerRadius: keycapCornerRadius + 2)
                 .fill(
                     LinearGradient(
-                        colors: [
-                            keycapColor,
-                            keycapSideColor
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
+                        colors: [baseLitEdge, baseColor, baseShadowEdge],
+                        startPoint: UnitPoint(x: lightAngleX, y: lightAngleY),
+                        endPoint: UnitPoint(x: 1 - lightAngleX, y: 1 - lightAngleY)
                     )
                 )
-                .frame(width: keycapWidth - 2, height: keycapHeight - 2)
+                .frame(width: baseWidth, height: baseHeight)
 
-            // Side highlight (left edge catch light)
-            RoundedRectangle(cornerRadius: keycapCornerRadius)
-                .fill(
+            // Inner shadow to create depth between base and middle layer
+            RoundedRectangle(cornerRadius: keycapCornerRadius + 1)
+                .stroke(
                     LinearGradient(
                         colors: [
-                            shadowLight.opacity(isDarkMode ? 0.15 : 0.4),
+                            Color.black.opacity(isDarkMode ? 0.4 : 0.2),
                             Color.clear,
-                            Color.clear
+                            shadowLight.opacity(isDarkMode ? 0.1 : 0.3)
                         ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
+                        startPoint: UnitPoint(x: 1 - lightAngleX, y: 1 - lightAngleY),
+                        endPoint: UnitPoint(x: lightAngleX, y: lightAngleY)
+                    ),
+                    lineWidth: 2
                 )
-                .frame(width: keycapWidth - 2, height: keycapHeight - 2)
+                .frame(width: baseWidth - 2, height: baseHeight - 2)
         }
-        .offset(y: -keycapDepth / 3)
+        .shadow(
+            color: shadowDark.opacity(isDarkMode ? 0.7 : 0.4),
+            radius: 3,
+            x: CGFloat(1 - lightAngleX) * 3,
+            y: 3
+        )
     }
 
-    private var purchaseKeycapTop: some View {
-        ZStack {
-            // Top surface base
+    // MARK: - Middle Layer (Main body with bevel transition)
+
+    private func purchaseKeycapMiddleLayer(lightAngleX: Double, lightAngleY: Double) -> some View {
+        let middleWidth = keycapWidth + taperPerLayer * 0.5
+        let middleHeight = keycapHeight + taperPerLayer * 0.5
+
+        // Middle body colors
+        let bodyColor = keycapColor
+        let bodyLitEdge = isDarkMode ? Color(hex: 0x505055) : Color(hex: 0xE8E8EC)
+        let bodyShadowEdge = isDarkMode ? Color(hex: 0x2A2A2E) : Color(hex: 0xC0C0C4)
+
+        return ZStack {
+            // Main body with lit/shadow gradient
+            RoundedRectangle(cornerRadius: keycapCornerRadius + 1)
+                .fill(
+                    LinearGradient(
+                        colors: [bodyLitEdge, bodyColor, bodyShadowEdge],
+                        startPoint: UnitPoint(x: lightAngleX, y: lightAngleY),
+                        endPoint: UnitPoint(x: 1 - lightAngleX, y: 1 - lightAngleY)
+                    )
+                )
+                .frame(width: middleWidth, height: middleHeight)
+
+            // Subtle top edge highlight
+            RoundedRectangle(cornerRadius: keycapCornerRadius)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            shadowLight.opacity(isDarkMode ? 0.2 : 0.5),
+                            Color.clear,
+                            Color.black.opacity(isDarkMode ? 0.2 : 0.1)
+                        ],
+                        startPoint: UnitPoint(x: lightAngleX, y: lightAngleY),
+                        endPoint: UnitPoint(x: 1 - lightAngleX, y: 1 - lightAngleY)
+                    ),
+                    lineWidth: 1.5
+                )
+                .frame(width: middleWidth - 1, height: middleHeight - 1)
+        }
+    }
+
+    // MARK: - Top Layer (Dished surface)
+
+    private func purchaseKeycapTopLayer(lightAngleX: Double, lightAngleY: Double) -> some View {
+        let topWidth = keycapWidth - taperPerLayer
+        let topHeight = keycapHeight - taperPerLayer
+
+        return ZStack {
+            // Top surface
             RoundedRectangle(cornerRadius: keycapCornerRadius - 1)
                 .fill(keycapTopColor)
-                .frame(width: keycapWidth - 8, height: keycapHeight - 8)
+                .frame(width: topWidth, height: topHeight)
 
-            // Dish effect (subtle concave scoop)
+            // Dish effect (concave center)
             RoundedRectangle(cornerRadius: keycapCornerRadius - 2)
                 .fill(
                     RadialGradient(
                         colors: [
-                            shadowDark.opacity(isDarkMode ? 0.12 : 0.08),
+                            shadowDark.opacity(isDarkMode ? 0.15 : 0.1),
                             Color.clear,
-                            shadowLight.opacity(isDarkMode ? 0.08 : 0.15)
+                            shadowLight.opacity(isDarkMode ? 0.1 : 0.2)
                         ],
-                        center: UnitPoint(x: 0.5, y: 0.6),
+                        center: UnitPoint(
+                            x: 0.65 + (reduceMotion ? 0 : tiltX * 0.3),
+                            y: 0.65 - (reduceMotion ? 0 : tiltY * 0.3)
+                        ),
                         startRadius: 0,
-                        endRadius: keycapWidth * 0.4
+                        endRadius: topWidth * 0.5
                     )
                 )
-                .frame(width: keycapWidth - 12, height: keycapHeight - 12)
+                .frame(width: topWidth - 4, height: topHeight - 4)
 
-            // Top edge highlight
+            // Top edge ring highlight
             RoundedRectangle(cornerRadius: keycapCornerRadius - 1)
                 .stroke(
                     LinearGradient(
                         colors: [
-                            shadowLight.opacity(isDarkMode ? 0.25 : 0.6),
-                            Color.clear,
-                            shadowDark.opacity(isDarkMode ? 0.2 : 0.15)
+                            shadowLight.opacity(isDarkMode ? 0.3 : 0.7),
+                            shadowLight.opacity(isDarkMode ? 0.1 : 0.3),
+                            shadowDark.opacity(isDarkMode ? 0.3 : 0.2),
+                            shadowDark.opacity(isDarkMode ? 0.15 : 0.1)
                         ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                        startPoint: UnitPoint(x: lightAngleX, y: lightAngleY),
+                        endPoint: UnitPoint(x: 1 - lightAngleX, y: 1 - lightAngleY)
                     ),
                     lineWidth: 1
                 )
-                .frame(width: keycapWidth - 8, height: keycapHeight - 8)
+                .frame(width: topWidth - 2, height: topHeight - 2)
         }
-        .offset(y: -keycapDepth * 0.7)
     }
+
+    // MARK: - Keycap Legend
 
     private var purchaseKeycapLegend: some View {
         HStack(spacing: 8) {
@@ -591,6 +669,7 @@ struct PurchaseSheetView: View {
         .ignoresSafeArea()
         .sheet(isPresented: .constant(true)) {
             PurchaseSheetView(
+                motionManager: MotionManager(),
                 hapticEngine: HapticEngine(),
                 soundEngine: SoundEngine(),
                 onPurchaseSuccess: { print("Success!") }
@@ -604,6 +683,7 @@ struct PurchaseSheetView: View {
         .sheet(isPresented: .constant(true)) {
             PurchaseSheetView(
                 themeManager: ThemeManager(),
+                motionManager: MotionManager(),
                 hapticEngine: HapticEngine(),
                 soundEngine: SoundEngine(),
                 onPurchaseSuccess: { print("Success!") }

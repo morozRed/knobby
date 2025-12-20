@@ -41,6 +41,27 @@ struct KnobView: View {
         themeManager?.isDarkMode ?? false
     }
 
+    // Dynamic tilt properties
+    private var tiltX: Double { motionManager.tiltX }
+    private var tiltY: Double { motionManager.tiltY }
+    private var reduceMotion: Bool { motionManager.reduceMotion }
+
+    // Rim properties for 3D depth effect
+    private let rimThickness: CGFloat = 8
+    private let rimReveal: CGFloat = 3.5
+
+    private var rimColor: Color {
+        isDarkMode ? Color(hex: 0x3A3A40) : Color(hex: 0xC8C8CC)
+    }
+
+    private var rimHighlight: Color {
+        isDarkMode ? Color(hex: 0x4A4A50) : Color(hex: 0xD8D8DC)
+    }
+
+    private var rimShadow: Color {
+        isDarkMode ? Color(hex: 0x2A2A30) : Color(hex: 0xB0B0B4)
+    }
+
     var body: some View {
         ZStack {
             // Neumorphic knob body (raised from surface)
@@ -65,28 +86,67 @@ struct KnobView: View {
         }
     }
 
-    // MARK: - Knob Body (Neumorphic)
+    // MARK: - Knob Body (Neumorphic with 3D rim)
 
     private var knobBody: some View {
-        ZStack {
-            // Main knob circle with neumorphic shadows
+        let shadowOffsets = DynamicShadow.shadowOffsets(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+        let gradientCenter = DynamicShadow.convexGradientCenter(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+        let rimOffset = DynamicShadow.rimOffset(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            maxReveal: rimReveal,
+            reduceMotion: reduceMotion
+        )
+        let rimGradient = DynamicShadow.rimGradientPoints(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+        let edgePoints = DynamicShadow.edgeGradientPoints(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+
+        return ZStack {
+            // Cylindrical rim layer (behind main knob) - reveals 3D depth when tilted
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [rimHighlight, rimColor, rimShadow],
+                        startPoint: rimGradient.start,
+                        endPoint: rimGradient.end
+                    )
+                )
+                .frame(width: diameter + rimThickness, height: diameter + rimThickness)
+                .offset(x: rimOffset.width, y: rimOffset.height)
+
+            // Main knob circle with dynamic neumorphic shadows
             Circle()
                 .fill(surfaceColor)
                 .frame(width: diameter, height: diameter)
                 .shadow(
                     color: shadowLightColor.opacity(isDarkMode ? 0.3 : 0.9),
                     radius: isDarkMode ? 10 : 14,
-                    x: isDarkMode ? -6 : -10,
-                    y: isDarkMode ? -6 : -10
+                    x: shadowOffsets.light.width,
+                    y: shadowOffsets.light.height
                 )
                 .shadow(
                     color: shadowDarkColor.opacity(isDarkMode ? 0.8 : 0.7),
                     radius: isDarkMode ? 10 : 14,
-                    x: isDarkMode ? 6 : 10,
-                    y: isDarkMode ? 6 : 10
+                    x: shadowOffsets.dark.width,
+                    y: shadowOffsets.dark.height
                 )
 
-            // Inner soft gradient for 3D effect
+            // Inner soft gradient for 3D effect - dynamic center
             Circle()
                 .fill(
                     RadialGradient(
@@ -95,14 +155,14 @@ struct KnobView: View {
                             surfaceColor,
                             surfaceDarkColor.opacity(0.5)
                         ],
-                        center: UnitPoint(x: 0.35, y: 0.35),
+                        center: gradientCenter,
                         startRadius: 0,
                         endRadius: diameter * 0.55
                     )
                 )
                 .frame(width: diameter - 4, height: diameter - 4)
 
-            // Subtle edge highlight
+            // Subtle edge highlight - dynamic
             Circle()
                 .stroke(
                     LinearGradient(
@@ -111,8 +171,8 @@ struct KnobView: View {
                             shadowLightColor.opacity(isDarkMode ? 0.1 : 0.2),
                             shadowDarkColor.opacity(0.3)
                         ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                        startPoint: edgePoints.start,
+                        endPoint: edgePoints.end
                     ),
                     lineWidth: 1.5
                 )
@@ -172,7 +232,16 @@ struct KnobView: View {
     // MARK: - Top Highlight
 
     private var topHighlight: some View {
-        Ellipse()
+        let baseOffset = CGSize(width: -diameter * 0.15, height: -diameter * 0.2)
+        let dynamicOffset = DynamicShadow.highlightOffset(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            baseOffset: baseOffset,
+            maxShift: 6,
+            reduceMotion: reduceMotion
+        )
+
+        return Ellipse()
             .fill(
                 RadialGradient(
                     colors: [
@@ -186,7 +255,7 @@ struct KnobView: View {
                 )
             )
             .frame(width: 50, height: 20)
-            .offset(x: -diameter * 0.15, y: -diameter * 0.2)
+            .offset(x: dynamicOffset.width, y: dynamicOffset.height)
             .blur(radius: 2)
             .allowsHitTesting(false)
     }

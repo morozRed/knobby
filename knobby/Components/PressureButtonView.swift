@@ -41,6 +41,15 @@ struct PressureButtonView: View {
         themeManager?.isDarkMode ?? false
     }
 
+    // Dynamic tilt properties
+    private var tiltX: Double { motionManager.tiltX }
+    private var tiltY: Double { motionManager.tiltY }
+    private var reduceMotion: Bool { motionManager.reduceMotion }
+
+    // Rim properties for 3D depth effect
+    private let rimThickness: CGFloat = 4
+    private let rimReveal: CGFloat = 2
+
     var body: some View {
         ZStack {
             // Neumorphic recessed socket
@@ -60,25 +69,41 @@ struct PressureButtonView: View {
     // MARK: - Socket Base (Inset Neumorphic)
 
     private var socketBase: some View {
-        ZStack {
-            // Outer raised ring
+        let shadowOffsets = DynamicShadow.shadowOffsets(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+        let concaveCenter = DynamicShadow.concaveGradientCenter(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+        let edgePoints = DynamicShadow.edgeGradientPoints(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+
+        return ZStack {
+            // Outer raised ring with dynamic shadows
             Circle()
                 .fill(surfaceColor)
                 .frame(width: buttonSize + 24, height: buttonSize + 24)
                 .shadow(
                     color: shadowLightColor.opacity(isDarkMode ? 0.25 : 0.85),
                     radius: isDarkMode ? 6 : 10,
-                    x: isDarkMode ? -4 : -6,
-                    y: isDarkMode ? -4 : -6
+                    x: shadowOffsets.light.width,
+                    y: shadowOffsets.light.height
                 )
                 .shadow(
                     color: shadowDarkColor.opacity(isDarkMode ? 0.8 : 0.65),
                     radius: isDarkMode ? 6 : 10,
-                    x: isDarkMode ? 4 : 6,
-                    y: isDarkMode ? 4 : 6
+                    x: shadowOffsets.dark.width,
+                    y: shadowOffsets.dark.height
                 )
 
-            // Inset socket (concave)
+            // Inset socket (concave) - dynamic gradient center
             Circle()
                 .fill(
                     RadialGradient(
@@ -87,14 +112,14 @@ struct PressureButtonView: View {
                             surfaceColor,
                             surfaceLightColor.opacity(isDarkMode ? 0.25 : 0.4)
                         ],
-                        center: UnitPoint(x: 0.65, y: 0.65),
+                        center: concaveCenter,
                         startRadius: 0,
                         endRadius: buttonSize * 0.55
                     )
                 )
                 .frame(width: buttonSize + 8, height: buttonSize + 8)
 
-            // Inner shadow
+            // Inner shadow - dynamic edge
             Circle()
                 .stroke(
                     LinearGradient(
@@ -103,8 +128,8 @@ struct PressureButtonView: View {
                             Color.clear,
                             shadowLightColor.opacity(isDarkMode ? 0.12 : 0.25)
                         ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                        startPoint: edgePoints.start,
+                        endPoint: edgePoints.end
                     ),
                     lineWidth: 2
                 )
@@ -136,8 +161,54 @@ struct PressureButtonView: View {
     // MARK: - Button Body
 
     private var buttonBody: some View {
-        ZStack {
-            // Button body - graphite/accent color
+        let gradientCenter = DynamicShadow.convexGradientCenter(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+        let rimOffset = DynamicShadow.rimOffset(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            maxReveal: rimReveal,
+            reduceMotion: reduceMotion
+        )
+        let rimGradient = DynamicShadow.rimGradientPoints(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+        let edgePoints = DynamicShadow.edgeGradientPoints(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+        let baseHighlightOffset = CGSize(width: -buttonSize * 0.12, height: -buttonSize * 0.18)
+        let dynamicHighlight = DynamicShadow.highlightOffset(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            baseOffset: baseHighlightOffset,
+            maxShift: 4,
+            reduceMotion: reduceMotion
+        )
+
+        return ZStack {
+            // Button rim (behind button body) - reveals 3D depth
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            KnobbyColors.accentLight.opacity(0.8),
+                            KnobbyColors.accent,
+                            KnobbyColors.accentDark
+                        ],
+                        startPoint: rimGradient.start,
+                        endPoint: rimGradient.end
+                    )
+                )
+                .frame(width: buttonSize + rimThickness, height: buttonSize + rimThickness)
+                .offset(x: rimOffset.width, y: rimOffset.height)
+
+            // Button body - graphite/accent color with dynamic gradient
             Circle()
                 .fill(
                     RadialGradient(
@@ -146,7 +217,7 @@ struct PressureButtonView: View {
                             KnobbyColors.accent,
                             KnobbyColors.accentDark
                         ],
-                        center: UnitPoint(x: 0.35, y: 0.35),
+                        center: gradientCenter,
                         startRadius: 0,
                         endRadius: buttonSize * 0.55
                     )
@@ -159,7 +230,7 @@ struct PressureButtonView: View {
                     y: 4 - pressDepth * 2
                 )
 
-            // Top specular highlight
+            // Top specular highlight - dynamic position
             Ellipse()
                 .fill(
                     RadialGradient(
@@ -174,7 +245,7 @@ struct PressureButtonView: View {
                     )
                 )
                 .frame(width: 22, height: 12)
-                .offset(x: -buttonSize * 0.12, y: -buttonSize * 0.18)
+                .offset(x: dynamicHighlight.width, y: dynamicHighlight.height)
 
             // Secondary reflection
             Circle()
@@ -183,7 +254,7 @@ struct PressureButtonView: View {
                 .offset(x: buttonSize * 0.1, y: buttonSize * 0.15)
                 .blur(radius: 1)
 
-            // Edge highlight
+            // Edge highlight - dynamic
             Circle()
                 .stroke(
                     LinearGradient(
@@ -192,8 +263,8 @@ struct PressureButtonView: View {
                             Color.clear,
                             KnobbyColors.accentDark.opacity(0.3)
                         ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                        startPoint: edgePoints.start,
+                        endPoint: edgePoints.end
                     ),
                     lineWidth: 1.5
                 )

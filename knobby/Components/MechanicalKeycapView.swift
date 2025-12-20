@@ -3,6 +3,7 @@ import SwiftUI
 /// A premium mechanical keyboard keycap with satisfying thock sound.
 /// Toggles between two states, swapping icon and text on each press.
 struct MechanicalKeycapView: View {
+    var motionManager: MotionManager?
     var hapticEngine: HapticEngine
     var soundEngine: SoundEngine
     var themeManager: ThemeManager?
@@ -42,6 +43,11 @@ struct MechanicalKeycapView: View {
         themeManager?.isDarkMode ?? false
     }
 
+    // Dynamic tilt properties
+    private var tiltX: Double { motionManager?.tiltX ?? 0 }
+    private var tiltY: Double { motionManager?.tiltY ?? 0 }
+    private var reduceMotion: Bool { motionManager?.reduceMotion ?? true }
+
     // Keycap colors
     private var keycapColor: Color {
         isDarkMode ? Color(hex: 0x3A3A3C) : Color(hex: 0xE8E8E8)
@@ -70,7 +76,8 @@ struct MechanicalKeycapView: View {
             // The keycap itself
             keycap
         }
-        .frame(width: keycapSize + 16, height: keycapSize + 24)
+        .frame(width: keycapSize + 20, height: keycapSize + 24)  // Room for layers + shadows
+        .contentShape(Rectangle())
         .gesture(pressGesture)
     }
 
@@ -143,114 +150,200 @@ struct MechanicalKeycapView: View {
         .offset(y: 6)
     }
 
-    // MARK: - Keycap
+    // MARK: - Keycap (Proper 3D Layered Design)
+
+    // 3D keycap depth - how thick the keycap is from bottom to top
+    private let keycapDepth: CGFloat = 8
+    // How much each layer tapers inward (creates beveled edge)
+    private let taperPerLayer: CGFloat = 2
+    // Parallax multiplier for tilt response
+    private let parallaxStrength: CGFloat = 4
 
     private var keycap: some View {
-        ZStack {
-            // Keycap base (bottom edge - creates 3D depth)
-            keycapBase
+        // Calculate parallax offset based on tilt
+        // This creates the illusion of physical depth when tilting
+        let parallaxX = reduceMotion ? 0 : CGFloat(tiltX) * parallaxStrength * 2.5
+        let parallaxY = reduceMotion ? 0 : CGFloat(-tiltY) * parallaxStrength * 2.5
 
-            // Keycap body (the main visible part)
-            keycapBody
+        // Light direction affects which edges appear lit vs shadowed
+        let lightAngleX = reduceMotion ? 0.3 : 0.3 - tiltX * 0.5
+        let lightAngleY = reduceMotion ? 0.3 : 0.3 + tiltY * 0.5
 
-            // Top surface with dish
-            keycapTop
+        return ZStack {
+            // === LAYER 1: Bottom/Base layer (largest, creates visible sides) ===
+            keycapBaseLayer(
+                lightAngleX: lightAngleX,
+                lightAngleY: lightAngleY
+            )
+            .offset(x: parallaxX * 0.8, y: parallaxY * 0.8)
 
-            // Legend (icon + text)
+            // === LAYER 2: Middle body layer ===
+            keycapMiddleLayer(
+                lightAngleX: lightAngleX,
+                lightAngleY: lightAngleY
+            )
+            .offset(
+                x: parallaxX * 0.4,
+                y: -keycapDepth * 0.4 + parallaxY * 0.4
+            )
+
+            // === LAYER 3: Top surface (smallest, the dished top) ===
+            keycapTopLayer(
+                lightAngleX: lightAngleX,
+                lightAngleY: lightAngleY
+            )
+            .offset(
+                x: parallaxX * 0.15,
+                y: -keycapDepth * 0.75 + parallaxY * 0.15
+            )
+
+            // === LEGEND ===
             keycapLegend
+                .offset(
+                    x: parallaxX * 0.1,
+                    y: -keycapDepth * 0.75 + parallaxY * 0.1
+                )
         }
-        .offset(y: -keycapHeight / 2 + pressDepth)
+        .offset(y: pressDepth)
         .offset(x: wobbleOffset)
         .animation(.interpolatingSpring(stiffness: 800, damping: 15), value: pressDepth)
         .animation(.interpolatingSpring(stiffness: 1000, damping: 10), value: wobbleOffset)
     }
 
-    private var keycapBase: some View {
-        RoundedRectangle(cornerRadius: cornerRadius + 1)
-            .fill(keycapSideColor)
-            .frame(width: keycapSize, height: keycapSize)
-            .shadow(
-                color: shadowDarkColor.opacity(isDarkMode ? 0.8 : 0.5),
-                radius: 4,
-                x: 0,
-                y: 4
-            )
-    }
+    // MARK: - Base Layer (Shows the physical sides)
 
-    private var keycapBody: some View {
-        ZStack {
-            // Main body with side gradient (shows depth)
-            RoundedRectangle(cornerRadius: cornerRadius)
+    private func keycapBaseLayer(lightAngleX: Double, lightAngleY: Double) -> some View {
+        // Base is slightly larger - the visible rim IS the "side" of the keycap
+        let baseSize = keycapSize + taperPerLayer * 2
+
+        // Colors for the base layer - darker, showing physical depth
+        let baseColor = isDarkMode ? Color(hex: 0x252528) : Color(hex: 0xB8B8BC)
+        let baseLitEdge = isDarkMode ? Color(hex: 0x404045) : Color(hex: 0xD0D0D4)
+        let baseShadowEdge = isDarkMode ? Color(hex: 0x18181A) : Color(hex: 0x909094)
+
+        return ZStack {
+            // Main base shape with directional lighting gradient
+            RoundedRectangle(cornerRadius: cornerRadius + 2)
                 .fill(
                     LinearGradient(
-                        colors: [
-                            keycapColor,
-                            keycapSideColor
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
+                        colors: [baseLitEdge, baseColor, baseShadowEdge],
+                        startPoint: UnitPoint(x: lightAngleX, y: lightAngleY),
+                        endPoint: UnitPoint(x: 1 - lightAngleX, y: 1 - lightAngleY)
                     )
                 )
-                .frame(width: keycapSize - 2, height: keycapSize - 2)
+                .frame(width: baseSize, height: baseSize)
 
-            // Side highlight (left edge catch light)
-            RoundedRectangle(cornerRadius: cornerRadius)
-                .fill(
+            // Inner shadow to create depth between base and middle layer
+            RoundedRectangle(cornerRadius: cornerRadius + 1)
+                .stroke(
                     LinearGradient(
                         colors: [
-                            shadowLightColor.opacity(isDarkMode ? 0.15 : 0.4),
+                            Color.black.opacity(isDarkMode ? 0.4 : 0.2),
                             Color.clear,
-                            Color.clear
+                            shadowLightColor.opacity(isDarkMode ? 0.1 : 0.3)
                         ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
+                        startPoint: UnitPoint(x: 1 - lightAngleX, y: 1 - lightAngleY),
+                        endPoint: UnitPoint(x: lightAngleX, y: lightAngleY)
+                    ),
+                    lineWidth: 2
                 )
-                .frame(width: keycapSize - 2, height: keycapSize - 2)
+                .frame(width: baseSize - 2, height: baseSize - 2)
         }
-        .offset(y: -keycapHeight / 3)
+        .shadow(
+            color: shadowDarkColor.opacity(isDarkMode ? 0.7 : 0.4),
+            radius: 3,
+            x: CGFloat(1 - lightAngleX) * 3,
+            y: 3
+        )
     }
 
-    private var keycapTop: some View {
-        ZStack {
-            // Top surface base
+    // MARK: - Middle Layer (Main body with bevel transition)
+
+    private func keycapMiddleLayer(lightAngleX: Double, lightAngleY: Double) -> some View {
+        let middleSize = keycapSize + taperPerLayer * 0.5
+
+        // Middle body colors
+        let bodyColor = keycapColor
+        let bodyLitEdge = isDarkMode ? Color(hex: 0x505055) : Color(hex: 0xE8E8EC)
+        let bodyShadowEdge = isDarkMode ? Color(hex: 0x2A2A2E) : Color(hex: 0xC0C0C4)
+
+        return ZStack {
+            // Main body with lit/shadow gradient
+            RoundedRectangle(cornerRadius: cornerRadius + 1)
+                .fill(
+                    LinearGradient(
+                        colors: [bodyLitEdge, bodyColor, bodyShadowEdge],
+                        startPoint: UnitPoint(x: lightAngleX, y: lightAngleY),
+                        endPoint: UnitPoint(x: 1 - lightAngleX, y: 1 - lightAngleY)
+                    )
+                )
+                .frame(width: middleSize, height: middleSize)
+
+            // Subtle top edge highlight
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            shadowLightColor.opacity(isDarkMode ? 0.2 : 0.5),
+                            Color.clear,
+                            Color.black.opacity(isDarkMode ? 0.2 : 0.1)
+                        ],
+                        startPoint: UnitPoint(x: lightAngleX, y: lightAngleY),
+                        endPoint: UnitPoint(x: 1 - lightAngleX, y: 1 - lightAngleY)
+                    ),
+                    lineWidth: 1.5
+                )
+                .frame(width: middleSize - 1, height: middleSize - 1)
+        }
+    }
+
+    // MARK: - Top Layer (Dished surface)
+
+    private func keycapTopLayer(lightAngleX: Double, lightAngleY: Double) -> some View {
+        let topSize = keycapSize - taperPerLayer
+
+        return ZStack {
+            // Top surface
             RoundedRectangle(cornerRadius: cornerRadius - 1)
                 .fill(keycapTopColor)
-                .frame(width: keycapSize - 6, height: keycapSize - 6)
+                .frame(width: topSize, height: topSize)
 
-            // Dish effect (subtle concave scoop)
+            // Dish effect (concave center)
             RoundedRectangle(cornerRadius: cornerRadius - 2)
                 .fill(
                     RadialGradient(
                         colors: [
-                            shadowDarkColor.opacity(isDarkMode ? 0.12 : 0.08),
+                            shadowDarkColor.opacity(isDarkMode ? 0.15 : 0.1),
                             Color.clear,
-                            shadowLightColor.opacity(isDarkMode ? 0.08 : 0.15)
+                            shadowLightColor.opacity(isDarkMode ? 0.1 : 0.2)
                         ],
-                        center: UnitPoint(x: 0.5, y: 0.6),
+                        center: UnitPoint(
+                            x: 0.65 + (reduceMotion ? 0 : tiltX * 0.3),
+                            y: 0.65 - (reduceMotion ? 0 : tiltY * 0.3)
+                        ),
                         startRadius: 0,
-                        endRadius: keycapSize * 0.45
+                        endRadius: topSize * 0.5
                     )
                 )
-                .frame(width: keycapSize - 8, height: keycapSize - 8)
+                .frame(width: topSize - 4, height: topSize - 4)
 
-            // Top edge highlight
+            // Top edge ring highlight
             RoundedRectangle(cornerRadius: cornerRadius - 1)
                 .stroke(
                     LinearGradient(
                         colors: [
-                            shadowLightColor.opacity(isDarkMode ? 0.25 : 0.6),
-                            Color.clear,
-                            shadowDarkColor.opacity(isDarkMode ? 0.2 : 0.15)
+                            shadowLightColor.opacity(isDarkMode ? 0.3 : 0.7),
+                            shadowLightColor.opacity(isDarkMode ? 0.1 : 0.3),
+                            shadowDarkColor.opacity(isDarkMode ? 0.3 : 0.2),
+                            shadowDarkColor.opacity(isDarkMode ? 0.15 : 0.1)
                         ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                        startPoint: UnitPoint(x: lightAngleX, y: lightAngleY),
+                        endPoint: UnitPoint(x: 1 - lightAngleX, y: 1 - lightAngleY)
                     ),
                     lineWidth: 1
                 )
-                .frame(width: keycapSize - 6, height: keycapSize - 6)
+                .frame(width: topSize - 2, height: topSize - 2)
         }
-        .offset(y: -keycapHeight * 0.7)
     }
 
     private var keycapLegend: some View {
@@ -270,7 +363,6 @@ struct MechanicalKeycapView: View {
                 .foregroundColor(isToggled ? accentColor.opacity(0.9) : legendColor.opacity(0.8))
                 .tracking(1)
         }
-        .offset(y: -keycapHeight * 0.7)
         .animation(.easeInOut(duration: 0.15), value: isToggled)
     }
 

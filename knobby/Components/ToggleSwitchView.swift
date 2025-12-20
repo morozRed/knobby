@@ -40,6 +40,11 @@ struct ToggleSwitchView: View {
         themeManager?.isDarkMode ?? false
     }
 
+    // Dynamic tilt properties
+    private var tiltX: Double { motionManager.tiltX }
+    private var tiltY: Double { motionManager.tiltY }
+    private var reduceMotion: Bool { motionManager.reduceMotion }
+
     var body: some View {
         ZStack {
             // Neumorphic track (inset)
@@ -60,25 +65,36 @@ struct ToggleSwitchView: View {
     // MARK: - Track Base (Inset Neumorphic)
 
     private var trackBase: some View {
-        ZStack {
-            // Outer raised area
+        let shadowOffsets = DynamicShadow.shadowOffsets(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+        let edgePoints = DynamicShadow.edgeGradientPoints(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+
+        return ZStack {
+            // Outer raised area with dynamic shadows
             Capsule()
                 .fill(surfaceColor)
                 .frame(width: trackWidth + 16, height: trackHeight + 16)
                 .shadow(
                     color: shadowLightColor.opacity(isDarkMode ? 0.25 : 0.85),
                     radius: isDarkMode ? 6 : 10,
-                    x: isDarkMode ? -4 : -6,
-                    y: isDarkMode ? -4 : -6
+                    x: shadowOffsets.light.width,
+                    y: shadowOffsets.light.height
                 )
                 .shadow(
                     color: shadowDarkColor.opacity(isDarkMode ? 0.8 : 0.65),
                     radius: isDarkMode ? 6 : 10,
-                    x: isDarkMode ? 4 : 6,
-                    y: isDarkMode ? 4 : 6
+                    x: shadowOffsets.dark.width,
+                    y: shadowOffsets.dark.height
                 )
 
-            // Inset track
+            // Inset track with dynamic gradient
             Capsule()
                 .fill(
                     LinearGradient(
@@ -87,13 +103,13 @@ struct ToggleSwitchView: View {
                             surfaceColor,
                             surfaceLightColor.opacity(isDarkMode ? 0.3 : 0.5)
                         ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                        startPoint: edgePoints.start,
+                        endPoint: edgePoints.end
                     )
                 )
                 .frame(width: trackWidth, height: trackHeight)
 
-            // Inner shadow
+            // Inner shadow with dynamic gradient
             Capsule()
                 .stroke(
                     LinearGradient(
@@ -102,8 +118,8 @@ struct ToggleSwitchView: View {
                             Color.clear,
                             shadowLightColor.opacity(isDarkMode ? 0.15 : 0.3)
                         ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                        startPoint: edgePoints.start,
+                        endPoint: edgePoints.end
                     ),
                     lineWidth: 2
                 )
@@ -131,32 +147,80 @@ struct ToggleSwitchView: View {
     // MARK: - Thumb
 
     private var thumb: some View {
-        ZStack {
-            // Shadow
+        let shadowOffsets = DynamicShadow.shadowOffsets(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            maxOffset: 8,
+            reduceMotion: reduceMotion
+        )
+        let gradientCenter = DynamicShadow.convexGradientCenter(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+        let rimOffset = DynamicShadow.rimOffset(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            maxReveal: 2,
+            reduceMotion: reduceMotion
+        )
+        let rimGradient = DynamicShadow.rimGradientPoints(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+        let edgePoints = DynamicShadow.edgeGradientPoints(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+
+        // Rim colors
+        let rimColor = surfaceDarkColor
+        let rimHighlight = surfaceLightColor.opacity(0.6)
+        let rimShadow = shadowDarkColor.opacity(0.5)
+
+        return ZStack {
+            // 3D rim layer (behind thumb) - reveals depth when tilted
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [rimHighlight, rimColor, rimShadow],
+                        startPoint: rimGradient.start,
+                        endPoint: rimGradient.end
+                    )
+                )
+                .frame(width: thumbSize + 4, height: thumbSize + 4)
+                .offset(x: rimOffset.width, y: rimOffset.height)
+
+            // Shadow - dynamic position
             Ellipse()
                 .fill(shadowDarkColor.opacity(isDarkMode ? 0.5 : 0.35))
                 .frame(width: thumbSize * 0.8, height: thumbSize * 0.3)
                 .blur(radius: 4)
-                .offset(y: 6)
+                .offset(
+                    x: CGFloat(tiltX) * 3,
+                    y: 6 - CGFloat(tiltY) * 2
+                )
 
-            // Thumb body - raised neumorphic
+            // Thumb body - raised neumorphic with dynamic shadows
             Circle()
                 .fill(surfaceColor)
                 .frame(width: thumbSize, height: thumbSize)
                 .shadow(
                     color: shadowLightColor.opacity(isDarkMode ? 0.3 : 0.9),
                     radius: isDarkMode ? 4 : 6,
-                    x: isDarkMode ? -3 : -4,
-                    y: isDarkMode ? -3 : -4
+                    x: shadowOffsets.light.width,
+                    y: shadowOffsets.light.height
                 )
                 .shadow(
                     color: shadowDarkColor.opacity(isDarkMode ? 0.7 : 0.65),
                     radius: isDarkMode ? 4 : 6,
-                    x: isDarkMode ? 3 : 4,
-                    y: isDarkMode ? 3 : 4
+                    x: shadowOffsets.dark.width,
+                    y: shadowOffsets.dark.height
                 )
 
-            // Inner gradient
+            // Inner gradient with dynamic center
             Circle()
                 .fill(
                     RadialGradient(
@@ -165,14 +229,14 @@ struct ToggleSwitchView: View {
                             surfaceColor,
                             surfaceDarkColor.opacity(0.3)
                         ],
-                        center: UnitPoint(x: 0.35, y: 0.35),
+                        center: gradientCenter,
                         startRadius: 0,
                         endRadius: thumbSize * 0.5
                     )
                 )
                 .frame(width: thumbSize - 4, height: thumbSize - 4)
 
-            // Edge highlight
+            // Edge highlight with dynamic gradient
             Circle()
                 .stroke(
                     LinearGradient(
@@ -181,8 +245,8 @@ struct ToggleSwitchView: View {
                             Color.clear,
                             shadowDarkColor.opacity(0.2)
                         ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                        startPoint: edgePoints.start,
+                        endPoint: edgePoints.end
                     ),
                     lineWidth: 1
                 )
@@ -205,14 +269,6 @@ struct ToggleSwitchView: View {
         }
         hapticEngine.playDetent()
         soundEngine.play(.switchClick)
-    }
-}
-
-// MARK: - Helpers
-
-extension Double {
-    func clamped(to range: ClosedRange<Double>) -> Double {
-        min(max(self, range.lowerBound), range.upperBound)
     }
 }
 

@@ -1,10 +1,11 @@
 import SwiftUI
 
 /// A neumorphic cell container for tactile objects.
-/// Provides raised panel effect with static neumorphic lighting.
+/// Provides raised panel effect with dynamic neumorphic lighting responding to device tilt.
 struct NeumorphicCell<Content: View>: View {
     let isLocked: Bool
     var themeManager: ThemeManager?
+    var motionManager: MotionManager?
     var hapticEngine: HapticEngine?
     var soundEngine: SoundEngine?
 
@@ -16,6 +17,7 @@ struct NeumorphicCell<Content: View>: View {
     init(
         isLocked: Bool = false,
         themeManager: ThemeManager? = nil,
+        motionManager: MotionManager? = nil,
         hapticEngine: HapticEngine? = nil,
         soundEngine: SoundEngine? = nil,
         onUnlockTapped: (() -> Void)? = nil,
@@ -23,6 +25,7 @@ struct NeumorphicCell<Content: View>: View {
     ) {
         self.isLocked = isLocked
         self.themeManager = themeManager
+        self.motionManager = motionManager
         self.hapticEngine = hapticEngine
         self.soundEngine = soundEngine
         self.onUnlockTapped = onUnlockTapped
@@ -45,6 +48,15 @@ struct NeumorphicCell<Content: View>: View {
         themeManager?.shadowLight ?? KnobbyColors.shadowLight
     }
 
+    private var isDarkMode: Bool {
+        themeManager?.isDarkMode ?? false
+    }
+
+    // Dynamic shadow properties
+    private var tiltX: Double { motionManager?.tiltX ?? 0 }
+    private var tiltY: Double { motionManager?.tiltY ?? 0 }
+    private var reduceMotion: Bool { motionManager?.reduceMotion ?? true }
+
     var body: some View {
         ZStack {
             // Layer 1: Main neumorphic panel with contained shadows
@@ -64,59 +76,70 @@ struct NeumorphicCell<Content: View>: View {
     // MARK: - Main Panel
 
     private var mainPanel: some View {
-        RoundedRectangle(cornerRadius: 24, style: .continuous)
+        let shadowOffsets = DynamicShadow.shadowOffsets(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+        let edgePoints = DynamicShadow.edgeGradientPoints(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+
+        return RoundedRectangle(cornerRadius: 24, style: .continuous)
             .fill(surfaceColor)
             .overlay {
-                // Inner gradient for 3D convex surface - light from top-left
+                // Inner gradient for 3D convex surface - light shifts with tilt
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(0.25),
+                                Color.white.opacity(isDarkMode ? 0.12 : 0.25),
                                 Color.clear,
-                                shadowDarkColor.opacity(0.08)
+                                shadowDarkColor.opacity(isDarkMode ? 0.12 : 0.08)
                             ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
+                            startPoint: edgePoints.start,
+                            endPoint: edgePoints.end
                         )
                     )
             }
             .overlay {
-                // Border highlight - bright top-left edge, subtle bottom-right
+                // Border highlight - dynamic edge catching light
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .stroke(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(0.9),
-                                Color.white.opacity(0.4),
-                                shadowDarkColor.opacity(0.3)
+                                Color.white.opacity(isDarkMode ? 0.4 : 0.9),
+                                Color.white.opacity(isDarkMode ? 0.15 : 0.4),
+                                shadowDarkColor.opacity(isDarkMode ? 0.4 : 0.3)
                             ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
+                            startPoint: edgePoints.start,
+                            endPoint: edgePoints.end
                         ),
                         lineWidth: 1
                     )
             }
-            // Light source shadow (top-left highlight)
+            // Light source shadow (top-left highlight) - dynamic
             .shadow(
-                color: shadowLightColor.opacity(0.7),
-                radius: 8,
-                x: -4,
-                y: -4
+                color: shadowLightColor.opacity(isDarkMode ? 0.25 : 0.7),
+                radius: isDarkMode ? 6 : 8,
+                x: shadowOffsets.light.width,
+                y: shadowOffsets.light.height
             )
-            // Primary depth shadow (bottom-right)
+            // Primary depth shadow (bottom-right) - dynamic
             .shadow(
-                color: shadowDarkColor.opacity(0.35),
-                radius: 10,
-                x: 5,
-                y: 5
+                color: shadowDarkColor.opacity(isDarkMode ? 0.6 : 0.35),
+                radius: isDarkMode ? 8 : 10,
+                x: shadowOffsets.dark.width,
+                y: shadowOffsets.dark.height
             )
-            // Soft ambient shadow for extra depth
+            // Soft ambient shadow for extra depth - follows dark shadow
             .shadow(
-                color: shadowDarkColor.opacity(0.15),
+                color: shadowDarkColor.opacity(isDarkMode ? 0.25 : 0.15),
                 radius: 16,
-                x: 8,
-                y: 12
+                x: shadowOffsets.dark.width * 1.6,
+                y: shadowOffsets.dark.height * 2
             )
     }
 
@@ -125,6 +148,7 @@ struct NeumorphicCell<Content: View>: View {
     private var lockOverlay: some View {
         LockedCellOverlay(
             themeManager: themeManager,
+            motionManager: motionManager,
             hapticEngine: hapticEngine,
             soundEngine: soundEngine,
             onUnlockTapped: onUnlockTapped

@@ -19,6 +19,10 @@ final class MotionManager {
     // Lower = more responsive, higher = smoother
     private let smoothingFactor: Double = 0.15
 
+    // Update throttling - don't update UI faster than 30fps for performance
+    private var lastUpdateTime: TimeInterval = 0
+    private let minUpdateInterval: TimeInterval = 1.0 / 30.0
+
     // Accessibility
     var reduceMotion: Bool = false
 
@@ -39,26 +43,41 @@ final class MotionManager {
             return
         }
 
-        // Use higher update rate for smoother data capture
-        motionManager.deviceMotionUpdateInterval = 1.0 / 120.0
+        // Capture at 60Hz for smooth data, but throttle UI updates to 30Hz
+        motionManager.deviceMotionUpdateInterval = 1.0 / 60.0
 
         // Process motion data on background queue
         motionManager.startDeviceMotionUpdates(to: motionQueue) { [weak self] motion, error in
             guard let self, let motion, error == nil else { return }
 
             // Capture raw values
-            self.rawTiltX = motion.gravity.x
-            self.rawTiltY = motion.gravity.y
+            let newRawX = motion.gravity.x
+            let newRawY = motion.gravity.y
+
+            // Apply smoothing on the capture thread
+            let smoothedX = self.tiltX + (newRawX - self.tiltX) * self.smoothingFactor
+            let smoothedY = self.tiltY + (newRawY - self.tiltY) * self.smoothingFactor
+
+            // Throttle UI updates for performance
+            let now = CACurrentMediaTime()
+            guard now - self.lastUpdateTime >= self.minUpdateInterval else { return }
+            self.lastUpdateTime = now
+
+            // Update on main thread for SwiftUI observation
+            DispatchQueue.main.async {
+                self.tiltX = smoothedX
+                self.tiltY = smoothedY
+            }
         }
 
         isRunning = true
     }
 
     /// Call this from your display link or animation loop for smooth interpolation
-    func updateSmoothedValues() {
-        // Exponential moving average for buttery smooth transitions
-        tiltX += (rawTiltX - tiltX) * smoothingFactor
-        tiltY += (rawTiltY - tiltY) * smoothingFactor
+    @discardableResult
+    func updateSmoothedValues() -> Bool {
+        // Now handled internally - this is kept for API compatibility
+        return true
     }
 
     /// Direct update without smoothing (for immediate response)

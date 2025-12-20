@@ -13,10 +13,10 @@ struct SensoryWallView: View {
     // MARK: - Pop Animation State
     @State private var cellsAppeared: Set<Int> = []
     @State private var randomizedOrder: [Int] = []
-    private let totalCells = 11
+    private let totalCells = 12
 
-    // Unlocked cells (free tier): Knob, Theme Toggle, Toggle Switch
-    private let freeCells: Set<Int> = [0, 1, 5]
+    // Unlocked cells (free tier): Knob, Theme Toggle, Toggle Switch, Branding Plate
+    private let freeCells: Set<Int> = [0, 1, 5, 11]
 
     // Purchase manager - observed for pro status changes
     private var purchaseManager = PurchaseManager.shared
@@ -31,15 +31,17 @@ struct SensoryWallView: View {
         let _ = isProUser
 
         GeometryReader { geometry in
+            let safeTop = geometry.safeAreaInsets.top
+
             ZStack {
-                // Premium surface with texture
+                // Premium surface with texture - extends under status bar
                 surfaceBackground
 
                 // Subtle ambient edge glow
                 ambientEdgeGlow
 
-                // Tactile objects in deliberate composition
-                objectsLayout(in: geometry)
+                // All content in a single ScrollView - status bar scrolls with content
+                objectsLayout(in: geometry, safeTop: safeTop)
                     .simultaneousGesture(
                         TapGesture().onEnded { dismissHint() }
                     )
@@ -50,7 +52,8 @@ struct SensoryWallView: View {
                 }
             }
         }
-        .ignoresSafeArea(edges: [.horizontal, .bottom])
+        .statusBarHidden()
+        .ignoresSafeArea()
         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: isProUser)
         .onAppear {
             motionManager.reduceMotion = reduceMotion
@@ -73,6 +76,7 @@ struct SensoryWallView: View {
         .sheet(isPresented: $showPurchaseSheet) {
             PurchaseSheetView(
                 themeManager: themeManager,
+                motionManager: motionManager,
                 hapticEngine: hapticEngine,
                 soundEngine: soundEngine,
                 onPurchaseSuccess: {
@@ -100,9 +104,8 @@ struct SensoryWallView: View {
 
     // MARK: - Objects Layout (Grid with Neumorphic Cells)
 
-    private func objectsLayout(in geometry: GeometryProxy) -> some View {
+    private func objectsLayout(in geometry: GeometryProxy, safeTop: CGFloat) -> some View {
         let width = geometry.size.width
-        let safeTop = geometry.safeAreaInsets.top
         let padding: CGFloat = 14
         let spacing: CGFloat = 16
 
@@ -118,11 +121,20 @@ struct SensoryWallView: View {
 
         return ScrollView(showsIndicators: false) {
             LazyVStack(spacing: spacing) {
+                // Custom status bar - scrolls with content, positioned below Dynamic Island
+                CustomStatusBarView(
+                    themeManager: themeManager,
+                    motionManager: motionManager
+                )
+                .padding(.top, safeTop > 50 ? safeTop + 28 : safeTop + 14)
+                .padding(.bottom, 8)
+
                 // Row 1: Main Knob (hero, FREE) + Theme Toggle (FREE)
                 HStack(spacing: spacing) {
                     NeumorphicCell(
                         isLocked: isLocked(0),
                         themeManager: themeManager,
+                        motionManager: motionManager,
                         hapticEngine: hapticEngine,
                         soundEngine: soundEngine,
                         onUnlockTapped: showUnlock
@@ -140,12 +152,14 @@ struct SensoryWallView: View {
                     NeumorphicCell(
                         isLocked: isLocked(1),
                         themeManager: themeManager,
+                        motionManager: motionManager,
                         hapticEngine: hapticEngine,
                         soundEngine: soundEngine,
                         onUnlockTapped: showUnlock
                     ) {
                         ThemeToggleView(
                             themeManager: themeManager,
+                            motionManager: motionManager,
                             hapticEngine: hapticEngine,
                             soundEngine: soundEngine
                         )
@@ -159,6 +173,7 @@ struct SensoryWallView: View {
                     NeumorphicCell(
                         isLocked: isLocked(2),
                         themeManager: themeManager,
+                        motionManager: motionManager,
                         hapticEngine: hapticEngine,
                         soundEngine: soundEngine,
                         onUnlockTapped: showUnlock
@@ -176,6 +191,7 @@ struct SensoryWallView: View {
                     NeumorphicCell(
                         isLocked: isLocked(3),
                         themeManager: themeManager,
+                        motionManager: motionManager,
                         hapticEngine: hapticEngine,
                         soundEngine: soundEngine,
                         onUnlockTapped: showUnlock
@@ -196,6 +212,7 @@ struct SensoryWallView: View {
                     NeumorphicCell(
                         isLocked: isLocked(4),
                         themeManager: themeManager,
+                        motionManager: motionManager,
                         hapticEngine: hapticEngine,
                         soundEngine: soundEngine,
                         onUnlockTapped: showUnlock
@@ -213,6 +230,7 @@ struct SensoryWallView: View {
                     NeumorphicCell(
                         isLocked: isLocked(5),
                         themeManager: themeManager,
+                        motionManager: motionManager,
                         hapticEngine: hapticEngine,
                         soundEngine: soundEngine,
                         onUnlockTapped: showUnlock
@@ -232,6 +250,7 @@ struct SensoryWallView: View {
                 NeumorphicCell(
                     isLocked: isLocked(6),
                     themeManager: themeManager,
+                    motionManager: motionManager,
                     hapticEngine: hapticEngine,
                     soundEngine: soundEngine,
                     onUnlockTapped: showUnlock
@@ -251,6 +270,7 @@ struct SensoryWallView: View {
                     NeumorphicCell(
                         isLocked: isLocked(7),
                         themeManager: themeManager,
+                        motionManager: motionManager,
                         hapticEngine: hapticEngine,
                         soundEngine: soundEngine,
                         onUnlockTapped: showUnlock
@@ -268,11 +288,13 @@ struct SensoryWallView: View {
                     NeumorphicCell(
                         isLocked: isLocked(8),
                         themeManager: themeManager,
+                        motionManager: motionManager,
                         hapticEngine: hapticEngine,
                         soundEngine: soundEngine,
                         onUnlockTapped: showUnlock
                     ) {
                         MechanicalKeycapView(
+                            motionManager: motionManager,
                             hapticEngine: hapticEngine,
                             soundEngine: soundEngine,
                             themeManager: themeManager,
@@ -291,6 +313,7 @@ struct SensoryWallView: View {
                 NeumorphicCell(
                     isLocked: isLocked(9),
                     themeManager: themeManager,
+                    motionManager: motionManager,
                     hapticEngine: hapticEngine,
                     soundEngine: soundEngine,
                     onUnlockTapped: showUnlock
@@ -307,11 +330,12 @@ struct SensoryWallView: View {
                 .frame(width: availableWidth, height: standardCellHeight)
                 .popFromSurface(isVisible: cellHasAppeared(9), reduceMotion: reduceMotion)
 
-                // Row 7: Click Counter (LOCKED, half width) - TE-style mechanical key + LCD
+                // Row 7: Pressure Meter (LOCKED) + Branding Plate (decorative)
                 HStack(spacing: spacing) {
                     NeumorphicCell(
                         isLocked: isLocked(10),
                         themeManager: themeManager,
+                        motionManager: motionManager,
                         hapticEngine: hapticEngine,
                         soundEngine: soundEngine,
                         onUnlockTapped: showUnlock
@@ -326,7 +350,22 @@ struct SensoryWallView: View {
                     .frame(width: smallCellSize, height: standardCellHeight)
                     .popFromSurface(isVisible: cellHasAppeared(10), reduceMotion: reduceMotion)
 
-                    Spacer()
+                    // Branding plate - decorative nameplate showing "knobby"
+                    NeumorphicCell(
+                        isLocked: false,  // Never locked, it's just branding
+                        themeManager: themeManager,
+                        motionManager: motionManager,
+                        hapticEngine: hapticEngine,
+                        soundEngine: soundEngine,
+                        onUnlockTapped: nil
+                    ) {
+                        BrandingPlateView(
+                            motionManager: motionManager,
+                            themeManager: themeManager
+                        )
+                    }
+                    .frame(width: smallCellSize, height: standardCellHeight)
+                    .popFromSurface(isVisible: cellHasAppeared(11), reduceMotion: reduceMotion)
                 }
 
                 // Bottom padding for safe scrolling

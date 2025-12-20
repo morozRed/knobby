@@ -45,6 +45,11 @@ struct FrequencyDialView: View {
         themeManager?.isDarkMode ?? false
     }
 
+    // Dynamic tilt properties
+    private var tiltX: Double { motionManager.tiltX }
+    private var tiltY: Double { motionManager.tiltY }
+    private var reduceMotion: Bool { motionManager.reduceMotion }
+
     var body: some View {
         ZStack {
             // Neumorphic track (inset)
@@ -67,25 +72,36 @@ struct FrequencyDialView: View {
     // MARK: - Track Base (Inset Neumorphic)
 
     private var trackBase: some View {
-        ZStack {
-            // Outer raised area
+        let shadowOffsets = DynamicShadow.shadowOffsets(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+        let edgePoints = DynamicShadow.edgeGradientPoints(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+
+        return ZStack {
+            // Outer raised area with dynamic shadows
             Capsule()
                 .fill(surfaceColor)
                 .frame(width: trackWidth + 12, height: trackHeight + 12)
                 .shadow(
                     color: shadowLightColor.opacity(isDarkMode ? 0.25 : 0.85),
                     radius: isDarkMode ? 6 : 10,
-                    x: isDarkMode ? -4 : -6,
-                    y: isDarkMode ? -4 : -6
+                    x: shadowOffsets.light.width,
+                    y: shadowOffsets.light.height
                 )
                 .shadow(
                     color: shadowDarkColor.opacity(isDarkMode ? 0.8 : 0.65),
                     radius: isDarkMode ? 6 : 10,
-                    x: isDarkMode ? 4 : 6,
-                    y: isDarkMode ? 4 : 6
+                    x: shadowOffsets.dark.width,
+                    y: shadowOffsets.dark.height
                 )
 
-            // Inset track
+            // Inset track with dynamic gradient
             Capsule()
                 .fill(
                     LinearGradient(
@@ -94,13 +110,13 @@ struct FrequencyDialView: View {
                             surfaceColor,
                             surfaceLightColor.opacity(isDarkMode ? 0.3 : 0.5)
                         ],
-                        startPoint: .top,
-                        endPoint: .bottom
+                        startPoint: edgePoints.start,
+                        endPoint: edgePoints.end
                     )
                 )
                 .frame(width: trackWidth, height: trackHeight)
 
-            // Inner shadow
+            // Inner shadow with dynamic gradient
             Capsule()
                 .stroke(
                     LinearGradient(
@@ -109,8 +125,8 @@ struct FrequencyDialView: View {
                             Color.clear,
                             shadowLightColor.opacity(isDarkMode ? 0.15 : 0.3)
                         ],
-                        startPoint: .top,
-                        endPoint: .bottom
+                        startPoint: edgePoints.start,
+                        endPoint: edgePoints.end
                     ),
                     lineWidth: 2
                 )
@@ -131,32 +147,75 @@ struct FrequencyDialView: View {
     // MARK: - Slider Thumb
 
     private var sliderThumb: some View {
-        ZStack {
-            // Shadow
+        let shadowOffsets = DynamicShadow.shadowOffsets(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            maxOffset: 10,
+            reduceMotion: reduceMotion
+        )
+        let edgePoints = DynamicShadow.edgeGradientPoints(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+        let rimOffset = DynamicShadow.rimOffset(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            maxReveal: 2.5,
+            reduceMotion: reduceMotion
+        )
+        let rimGradient = DynamicShadow.rimGradientPoints(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+
+        // Rim colors
+        let rimColor = surfaceDarkColor
+        let rimHighlight = surfaceLightColor.opacity(0.6)
+        let rimShadow = shadowDarkColor.opacity(0.5)
+
+        return ZStack {
+            // 3D rim layer (behind thumb) - reveals depth when tilted
+            RoundedRectangle(cornerRadius: 12)
+                .fill(
+                    LinearGradient(
+                        colors: [rimHighlight, rimColor, rimShadow],
+                        startPoint: rimGradient.start,
+                        endPoint: rimGradient.end
+                    )
+                )
+                .frame(width: thumbWidth + 5, height: thumbHeight + 5)
+                .offset(x: rimOffset.width, y: rimOffset.height)
+
+            // Shadow - dynamic position
             Ellipse()
                 .fill(shadowDarkColor.opacity(isDarkMode ? 0.6 : 0.4))
                 .frame(width: thumbWidth * 0.8, height: thumbHeight * 0.3)
                 .blur(radius: 5)
-                .offset(y: thumbHeight / 2 - 4)
+                .offset(
+                    x: CGFloat(tiltX) * 3,
+                    y: thumbHeight / 2 - 4 - CGFloat(tiltY) * 2
+                )
 
-            // Thumb body - raised neumorphic pill
+            // Thumb body - raised neumorphic pill with dynamic shadows
             RoundedRectangle(cornerRadius: 10)
                 .fill(surfaceColor)
                 .frame(width: thumbWidth, height: thumbHeight)
                 .shadow(
                     color: shadowLightColor.opacity(isDarkMode ? 0.3 : 0.9),
                     radius: isDarkMode ? 5 : 8,
-                    x: isDarkMode ? -3 : -4,
-                    y: isDarkMode ? -3 : -4
+                    x: shadowOffsets.light.width,
+                    y: shadowOffsets.light.height
                 )
                 .shadow(
                     color: shadowDarkColor.opacity(isDarkMode ? 0.7 : 0.65),
                     radius: isDarkMode ? 5 : 8,
-                    x: isDarkMode ? 3 : 4,
-                    y: isDarkMode ? 3 : 4
+                    x: shadowOffsets.dark.width,
+                    y: shadowOffsets.dark.height
                 )
 
-            // Inner gradient
+            // Inner gradient with dynamic direction
             RoundedRectangle(cornerRadius: 8)
                 .fill(
                     LinearGradient(
@@ -165,8 +224,8 @@ struct FrequencyDialView: View {
                             surfaceColor,
                             surfaceDarkColor.opacity(0.3)
                         ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                        startPoint: edgePoints.start,
+                        endPoint: edgePoints.end
                     )
                 )
                 .frame(width: thumbWidth - 4, height: thumbHeight - 4)
@@ -180,7 +239,7 @@ struct FrequencyDialView: View {
                 }
             }
 
-            // Edge highlight
+            // Edge highlight with dynamic gradient
             RoundedRectangle(cornerRadius: 10)
                 .stroke(
                     LinearGradient(
@@ -189,8 +248,8 @@ struct FrequencyDialView: View {
                             Color.clear,
                             shadowDarkColor.opacity(0.2)
                         ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                        startPoint: edgePoints.start,
+                        endPoint: edgePoints.end
                     ),
                     lineWidth: 1
                 )

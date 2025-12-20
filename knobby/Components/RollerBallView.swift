@@ -62,22 +62,28 @@ struct RollerBallView: View {
     // MARK: - Socket
 
     private var socket: some View {
-        ZStack {
-            // Outer raised rim
+        let shadowOffsets = DynamicShadow.shadowOffsets(
+            tiltX: motionManager.tiltX,
+            tiltY: motionManager.tiltY,
+            reduceMotion: motionManager.reduceMotion
+        )
+
+        return ZStack {
+            // Outer raised rim with dynamic shadows
             Circle()
                 .fill(surfaceColor)
                 .frame(width: socketDiameter + 12, height: socketDiameter + 12)
                 .shadow(
                     color: shadowLightColor.opacity(isDarkMode ? 0.25 : 0.85),
                     radius: 10,
-                    x: -6,
-                    y: -6
+                    x: shadowOffsets.light.width,
+                    y: shadowOffsets.light.height
                 )
                 .shadow(
                     color: shadowDarkColor.opacity(isDarkMode ? 0.75 : 0.6),
                     radius: 10,
-                    x: 6,
-                    y: 6
+                    x: shadowOffsets.dark.width,
+                    y: shadowOffsets.dark.height
                 )
 
             // Recessed bowl with tilt-responsive shading

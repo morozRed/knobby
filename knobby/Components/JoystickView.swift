@@ -40,6 +40,11 @@ struct JoystickView: View {
         themeManager?.isDarkMode ?? false
     }
 
+    // Dynamic tilt properties
+    private var tiltX: Double { motionManager.tiltX }
+    private var tiltY: Double { motionManager.tiltY }
+    private var reduceMotion: Bool { motionManager.reduceMotion }
+
     var body: some View {
         ZStack {
             // Neumorphic recessed socket
@@ -56,25 +61,41 @@ struct JoystickView: View {
     // MARK: - Socket Base (Inset Neumorphic)
 
     private var socketBase: some View {
-        ZStack {
-            // Outer raised ring
+        let shadowOffsets = DynamicShadow.shadowOffsets(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+        let concaveCenter = DynamicShadow.concaveGradientCenter(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+        let edgePoints = DynamicShadow.edgeGradientPoints(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+
+        return ZStack {
+            // Outer raised ring with dynamic shadows
             Circle()
                 .fill(surfaceColor)
                 .frame(width: socketSize + 20, height: socketSize + 20)
                 .shadow(
                     color: shadowLightColor.opacity(isDarkMode ? 0.25 : 0.85),
                     radius: isDarkMode ? 6 : 10,
-                    x: isDarkMode ? -4 : -6,
-                    y: isDarkMode ? -4 : -6
+                    x: shadowOffsets.light.width,
+                    y: shadowOffsets.light.height
                 )
                 .shadow(
                     color: shadowDarkColor.opacity(isDarkMode ? 0.8 : 0.65),
                     radius: isDarkMode ? 6 : 10,
-                    x: isDarkMode ? 4 : 6,
-                    y: isDarkMode ? 4 : 6
+                    x: shadowOffsets.dark.width,
+                    y: shadowOffsets.dark.height
                 )
 
-            // Inset socket (concave)
+            // Inset socket (concave) - dynamic gradient center
             Circle()
                 .fill(
                     RadialGradient(
@@ -83,14 +104,14 @@ struct JoystickView: View {
                             surfaceColor,
                             surfaceLightColor.opacity(isDarkMode ? 0.3 : 0.5)
                         ],
-                        center: UnitPoint(x: 0.65, y: 0.65),
+                        center: concaveCenter,
                         startRadius: 0,
                         endRadius: socketSize * 0.55
                     )
                 )
                 .frame(width: socketSize, height: socketSize)
 
-            // Inner shadow for depth
+            // Inner shadow for depth - dynamic edge
             Circle()
                 .stroke(
                     LinearGradient(
@@ -99,8 +120,8 @@ struct JoystickView: View {
                             Color.clear,
                             shadowLightColor.opacity(isDarkMode ? 0.15 : 0.3)
                         ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                        startPoint: edgePoints.start,
+                        endPoint: edgePoints.end
                     ),
                     lineWidth: 3
                 )
@@ -112,15 +133,37 @@ struct JoystickView: View {
     // MARK: - Ball
 
     private var ball: some View {
-        ZStack {
-            // Shadow under ball
+        let gradientCenter = DynamicShadow.convexGradientCenter(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+        let baseHighlightOffset = CGSize(width: -ballSize * 0.12, height: -ballSize * 0.18)
+        let dynamicHighlight = DynamicShadow.highlightOffset(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            baseOffset: baseHighlightOffset,
+            maxShift: 4,
+            reduceMotion: reduceMotion
+        )
+        let edgePoints = DynamicShadow.edgeGradientPoints(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+
+        return ZStack {
+            // Shadow under ball - shifts with tilt
             Ellipse()
                 .fill(shadowDarkColor.opacity(isDragging ? 0.5 : 0.4))
                 .frame(width: ballSize * 0.7, height: ballSize * 0.3)
                 .blur(radius: 6)
-                .offset(y: 8)
+                .offset(
+                    x: CGFloat(tiltX) * 4,
+                    y: 8 - CGFloat(tiltY) * 2
+                )
 
-            // Ball body - graphite/dark color
+            // Ball body - graphite/dark color with dynamic gradient
             Circle()
                 .fill(
                     RadialGradient(
@@ -129,7 +172,7 @@ struct JoystickView: View {
                             KnobbyColors.accent,
                             KnobbyColors.accentDark
                         ],
-                        center: UnitPoint(x: 0.35, y: 0.35),
+                        center: gradientCenter,
                         startRadius: 0,
                         endRadius: ballSize * 0.55
                     )
@@ -142,7 +185,7 @@ struct JoystickView: View {
                     y: 4
                 )
 
-            // Top specular highlight
+            // Top specular highlight - dynamic position
             Ellipse()
                 .fill(
                     RadialGradient(
@@ -157,7 +200,7 @@ struct JoystickView: View {
                     )
                 )
                 .frame(width: 18, height: 10)
-                .offset(x: -ballSize * 0.12, y: -ballSize * 0.18)
+                .offset(x: dynamicHighlight.width, y: dynamicHighlight.height)
 
             // Secondary reflection
             Circle()
@@ -166,7 +209,7 @@ struct JoystickView: View {
                 .offset(x: ballSize * 0.1, y: ballSize * 0.15)
                 .blur(radius: 1)
 
-            // Edge highlight
+            // Edge highlight - dynamic
             Circle()
                 .stroke(
                     LinearGradient(

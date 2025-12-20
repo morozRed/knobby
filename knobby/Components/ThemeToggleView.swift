@@ -4,8 +4,14 @@ import SwiftUI
 /// Designed as a tactile element that belongs on the sensory wall.
 struct ThemeToggleView: View {
     var themeManager: ThemeManager
+    var motionManager: MotionManager?
     var hapticEngine: HapticEngine
     var soundEngine: SoundEngine
+
+    // Dynamic tilt properties
+    private var tiltX: Double { motionManager?.tiltX ?? 0 }
+    private var tiltY: Double { motionManager?.tiltY ?? 0 }
+    private var reduceMotion: Bool { motionManager?.reduceMotion ?? true }
 
     private let frameWidth: CGFloat = 90
     private let frameHeight: CGFloat = 50
@@ -36,22 +42,33 @@ struct ThemeToggleView: View {
     // MARK: - Track Base (Inset Neumorphic)
 
     private var trackBase: some View {
-        ZStack {
-            // Outer raised area
+        let shadowOffsets = DynamicShadow.shadowOffsets(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+        let edgePoints = DynamicShadow.edgeGradientPoints(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+
+        return ZStack {
+            // Outer raised area with dynamic shadows
             Capsule()
                 .fill(themeManager.surface)
                 .frame(width: trackWidth + 12, height: trackHeight + 10)
                 .shadow(
                     color: themeManager.shadowLight.opacity(0.85),
                     radius: 8,
-                    x: -5,
-                    y: -5
+                    x: shadowOffsets.light.width,
+                    y: shadowOffsets.light.height
                 )
                 .shadow(
                     color: themeManager.shadowDark.opacity(0.6),
                     radius: 8,
-                    x: 5,
-                    y: 5
+                    x: shadowOffsets.dark.width,
+                    y: shadowOffsets.dark.height
                 )
 
             // Inset track
@@ -63,13 +80,13 @@ struct ThemeToggleView: View {
                             themeManager.surface,
                             themeManager.surfaceLight.opacity(0.6)
                         ],
-                        startPoint: .top,
-                        endPoint: .bottom
+                        startPoint: edgePoints.start,
+                        endPoint: edgePoints.end
                     )
                 )
                 .frame(width: trackWidth, height: trackHeight)
 
-            // Inner shadow for depth
+            // Inner shadow for depth - dynamic edge
             Capsule()
                 .stroke(
                     LinearGradient(
@@ -78,8 +95,8 @@ struct ThemeToggleView: View {
                             Color.clear,
                             Color.white.opacity(0.25)
                         ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                        startPoint: edgePoints.start,
+                        endPoint: edgePoints.end
                     ),
                     lineWidth: 2
                 )
@@ -115,32 +132,80 @@ struct ThemeToggleView: View {
     // MARK: - Thumb
 
     private var thumb: some View {
-        ZStack {
-            // Shadow under thumb
+        let shadowOffsets = DynamicShadow.shadowOffsets(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            maxOffset: 8,
+            reduceMotion: reduceMotion
+        )
+        let gradientCenter = DynamicShadow.convexGradientCenter(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+        let rimOffset = DynamicShadow.rimOffset(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            maxReveal: 2,
+            reduceMotion: reduceMotion
+        )
+        let rimGradient = DynamicShadow.rimGradientPoints(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+        let edgePoints = DynamicShadow.edgeGradientPoints(
+            tiltX: tiltX,
+            tiltY: tiltY,
+            reduceMotion: reduceMotion
+        )
+
+        // Rim colors
+        let rimColor = themeManager.surfaceDark
+        let rimHighlight = themeManager.surfaceLight.opacity(0.6)
+        let rimShadow = themeManager.shadowDark.opacity(0.5)
+
+        return ZStack {
+            // 3D rim layer (behind thumb) - reveals depth when tilted
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [rimHighlight, rimColor, rimShadow],
+                        startPoint: rimGradient.start,
+                        endPoint: rimGradient.end
+                    )
+                )
+                .frame(width: thumbSize + 4, height: thumbSize + 4)
+                .offset(x: rimOffset.width, y: rimOffset.height)
+
+            // Shadow under thumb - dynamic position
             Ellipse()
                 .fill(themeManager.shadowDark.opacity(0.4))
                 .frame(width: thumbSize * 0.8, height: thumbSize * 0.25)
                 .blur(radius: 4)
-                .offset(y: 5)
+                .offset(
+                    x: CGFloat(tiltX) * 3,
+                    y: 5 - CGFloat(tiltY) * 2
+                )
 
-            // Thumb body - raised neumorphic
+            // Thumb body - raised neumorphic with dynamic shadows
             Circle()
                 .fill(themeManager.surface)
                 .frame(width: thumbSize, height: thumbSize)
                 .shadow(
                     color: themeManager.shadowLight.opacity(0.9),
                     radius: 5,
-                    x: -3,
-                    y: -3
+                    x: shadowOffsets.light.width,
+                    y: shadowOffsets.light.height
                 )
                 .shadow(
                     color: themeManager.shadowDark.opacity(0.6),
                     radius: 5,
-                    x: 3,
-                    y: 3
+                    x: shadowOffsets.dark.width,
+                    y: shadowOffsets.dark.height
                 )
 
-            // Inner gradient for 3D effect
+            // Inner gradient for 3D effect - dynamic center
             Circle()
                 .fill(
                     RadialGradient(
@@ -149,14 +214,14 @@ struct ThemeToggleView: View {
                             themeManager.surface,
                             themeManager.surfaceDark.opacity(0.4)
                         ],
-                        center: UnitPoint(x: 0.35, y: 0.35),
+                        center: gradientCenter,
                         startRadius: 0,
                         endRadius: thumbSize * 0.5
                     )
                 )
                 .frame(width: thumbSize - 3, height: thumbSize - 3)
 
-            // Edge highlight
+            // Edge highlight - dynamic
             Circle()
                 .stroke(
                     LinearGradient(
@@ -165,8 +230,8 @@ struct ThemeToggleView: View {
                             Color.clear,
                             themeManager.shadowDark.opacity(0.25)
                         ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                        startPoint: edgePoints.start,
+                        endPoint: edgePoints.end
                     ),
                     lineWidth: 1
                 )
