@@ -13,7 +13,7 @@ struct SensoryWallView: View {
     // MARK: - Pop Animation State
     @State private var cellsAppeared: Set<Int> = []
     @State private var randomizedOrder: [Int] = []
-    private let totalCells = 10
+    private let totalCells = 11
 
     // Unlocked cells (free tier): Knob, Theme Toggle, Toggle Switch
     private let freeCells: Set<Int> = [0, 1, 5]
@@ -307,6 +307,28 @@ struct SensoryWallView: View {
                 .frame(width: availableWidth, height: standardCellHeight)
                 .popFromSurface(isVisible: cellHasAppeared(9), reduceMotion: reduceMotion)
 
+                // Row 7: Click Counter (LOCKED, half width) - TE-style mechanical key + LCD
+                HStack(spacing: spacing) {
+                    NeumorphicCell(
+                        isLocked: isLocked(10),
+                        themeManager: themeManager,
+                        hapticEngine: hapticEngine,
+                        soundEngine: soundEngine,
+                        onUnlockTapped: showUnlock
+                    ) {
+                        PressureMeterView(
+                            motionManager: motionManager,
+                            hapticEngine: hapticEngine,
+                            soundEngine: soundEngine,
+                            themeManager: themeManager
+                        )
+                    }
+                    .frame(width: smallCellSize, height: standardCellHeight)
+                    .popFromSurface(isVisible: cellHasAppeared(10), reduceMotion: reduceMotion)
+
+                    Spacer()
+                }
+
                 // Bottom padding for safe scrolling
                 Spacer().frame(height: 20)
             }
@@ -331,10 +353,6 @@ struct SensoryWallView: View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-
-            // Static noise texture overlay - uses pre-seeded positions for consistency
-            NoiseTextureView(isDarkMode: themeManager.isDarkMode)
-                .allowsHitTesting(false)
         }
         .drawingGroup() // Rasterize entire background stack
         .ignoresSafeArea()
@@ -462,47 +480,6 @@ struct PopFromSurface: ViewModifier {
             .offset(y: isVisible ? 0 : 25)
             .opacity(isVisible ? 1 : 0)
             // Removed blur - it's expensive and the scale+opacity+offset provides sufficient effect
-    }
-}
-
-// MARK: - Optimized Noise Texture
-
-/// Pre-computed noise texture that doesn't regenerate on every render
-struct NoiseTextureView: View {
-    let isDarkMode: Bool
-
-    // Pre-seeded random positions computed once and reused across instances.
-    private static let grainPoints: [(x: CGFloat, y: CGFloat, opacity: Double, size: CGFloat)] = {
-        var rng = SeededRandomGenerator(seed: 42)
-        var points: [(x: CGFloat, y: CGFloat, opacity: Double, size: CGFloat)] = []
-        points.reserveCapacity(200) // Reduced from 400 - still provides texture with less overhead
-
-        for _ in 0..<200 {
-            points.append((
-                x: CGFloat.random(in: 0...1, using: &rng),
-                y: CGFloat.random(in: 0...1, using: &rng),
-                opacity: Double.random(in: 0.015...0.04, using: &rng),
-                size: CGFloat.random(in: 0.5...1.2, using: &rng)
-            ))
-        }
-        return points
-    }()
-
-    var body: some View {
-        Canvas { context, size in
-            let grainColor: Color = isDarkMode ? .white : .black
-
-            for point in Self.grainPoints {
-                let x = point.x * size.width
-                let y = point.y * size.height
-
-                context.fill(
-                    Path(ellipseIn: CGRect(x: x, y: y, width: point.size, height: point.size)),
-                    with: .color(grainColor.opacity(point.opacity))
-                )
-            }
-        }
-        .drawingGroup()
     }
 }
 

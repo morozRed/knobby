@@ -20,6 +20,8 @@ struct PurchaseSheetView: View {
     @State private var purchaseButtonDepth: CGFloat = 0
     @State private var appeared = false
     @State private var isPurchasing = false
+    @State private var wobbleOffset: CGFloat = 0
+    @State private var lifetimePulse: Bool = false
 
     // MARK: - Theme Colors
 
@@ -39,26 +41,55 @@ struct PurchaseSheetView: View {
         themeManager?.isDarkMode ?? false
     }
 
+    // MARK: - Asphalt Color Palette
+
+    /// Primary text - deep asphalt charcoal
     private var textPrimary: Color {
-        isDarkMode ? .white : Color(hex: 0x3A3A42)
+        isDarkMode ? Color(hex: 0xE8E8EC) : Color(hex: 0x2A2A2E)
     }
 
+    /// Secondary text - medium asphalt gray
     private var textSecondary: Color {
-        isDarkMode ? Color(hex: 0x8A8A8A) : Color(hex: 0x6A6A6A)
+        isDarkMode ? Color(hex: 0x8A8A8E) : Color(hex: 0x5A5A5E)
     }
 
-    private var accentColor: Color {
-        Color(hex: 0x5A7A68) // Deep sage green
+    /// Tertiary/muted - lighter asphalt
+    private var textTertiary: Color {
+        isDarkMode ? Color(hex: 0x6A6A6E) : Color(hex: 0x7A7A7E)
+    }
+
+    /// Icon color - warm asphalt
+    private var iconColor: Color {
+        isDarkMode ? Color(hex: 0x9A9A9E) : Color(hex: 0x4A4A4E)
+    }
+
+    /// CTA accent - warm amber/gold for the keycap LED
+    private var ctaAccentColor: Color {
+        Color(hex: 0xE8A850)
+    }
+
+    /// Green LED color for "LIFETIME" text - mechanical keyboard RGB style
+    private var greenLedColor: Color {
+        Color(hex: 0x50E878)
+    }
+
+    // Keycap colors matching MechanicalKeycapView
+    private var keycapColor: Color {
+        isDarkMode ? Color(hex: 0x3A3A3C) : Color(hex: 0xE8E8E8)
+    }
+
+    private var keycapTopColor: Color {
+        isDarkMode ? Color(hex: 0x4A4A4C) : Color(hex: 0xF5F5F5)
+    }
+
+    private var keycapSideColor: Color {
+        isDarkMode ? Color(hex: 0x2A2A2C) : Color(hex: 0xD0D0D0)
     }
 
     var body: some View {
         ZStack {
             // Background
             surfaceColor
-                .ignoresSafeArea()
-
-            // Subtle texture
-            backgroundTexture
                 .ignoresSafeArea()
 
             // Content
@@ -101,6 +132,10 @@ struct PurchaseSheetView: View {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.1)) {
                 appeared = true
             }
+            // Start the green LED pulse animation
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                lifetimePulse = true
+            }
         }
     }
 
@@ -108,46 +143,18 @@ struct PurchaseSheetView: View {
 
     private var loadingOverlay: some View {
         ZStack {
-            surfaceColor.opacity(0.8)
+            surfaceColor.opacity(0.85)
                 .ignoresSafeArea()
 
-            ProgressView()
-                .scaleEffect(1.2)
-                .tint(accentColor)
-        }
-    }
+            VStack(spacing: 12) {
+                ProgressView()
+                    .scaleEffect(1.2)
+                    .tint(ctaAccentColor)
 
-    // MARK: - Background Texture
-
-    private var backgroundTexture: some View {
-        ZStack {
-            // Gradient from top-left light source
-            LinearGradient(
-                colors: [
-                    shadowLight.opacity(isDarkMode ? 0.08 : 0.25),
-                    Color.clear,
-                    shadowDark.opacity(0.1)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
-            // Subtle noise
-            Canvas { context, size in
-                for _ in 0..<200 {
-                    let x = CGFloat.random(in: 0...size.width)
-                    let y = CGFloat.random(in: 0...size.height)
-                    let grainOpacity = Double.random(in: 0.01...0.025)
-                    let grainSize = CGFloat.random(in: 0.5...1.0)
-
-                    context.fill(
-                        Path(ellipseIn: CGRect(x: x, y: y, width: grainSize, height: grainSize)),
-                        with: .color(isDarkMode ? .white.opacity(grainOpacity) : .black.opacity(grainOpacity))
-                    )
-                }
+                Text("Processing...")
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundColor(textSecondary)
             }
-            .drawingGroup()
-            .allowsHitTesting(false)
         }
     }
 
@@ -162,8 +169,8 @@ struct PurchaseSheetView: View {
     // MARK: - Header
 
     private var headerSection: some View {
-        VStack(spacing: 10) {
-            // Icon - a stylized knob
+        VStack(spacing: 12) {
+            // Icon - a stylized knob with asphalt indicator
             ZStack {
                 Circle()
                     .fill(
@@ -181,9 +188,9 @@ struct PurchaseSheetView: View {
                     .shadow(color: shadowDark.opacity(0.3), radius: 8, x: 3, y: 3)
                     .shadow(color: shadowLight.opacity(0.8), radius: 8, x: -3, y: -3)
 
-                // Indicator dot
+                // Indicator dot - asphalt colored
                 Circle()
-                    .fill(accentColor)
+                    .fill(iconColor)
                     .frame(width: 8, height: 8)
                     .offset(y: -16)
             }
@@ -193,6 +200,7 @@ struct PurchaseSheetView: View {
             Text("Unlock the Full Wall")
                 .font(.system(size: 22, weight: .semibold, design: .rounded))
                 .foregroundColor(textPrimary)
+                .tracking(-0.3)
                 .opacity(appeared ? 1 : 0)
                 .offset(y: appeared ? 0 : 10)
         }
@@ -214,11 +222,11 @@ struct PurchaseSheetView: View {
         HStack(spacing: 14) {
             Image(systemName: icon)
                 .font(.system(size: 15, weight: .medium))
-                .foregroundColor(accentColor)
+                .foregroundColor(iconColor)
                 .frame(width: 24)
 
             Text(text)
-                .font(.system(size: 15, weight: .medium))
+                .font(.system(size: 15, weight: .regular))
                 .foregroundColor(textSecondary)
 
             Spacer()
@@ -227,116 +235,290 @@ struct PurchaseSheetView: View {
 
     // MARK: - Purchase Button (Mechanical Keycap Style)
 
+    // Keycap dimensions for wide CTA key (2.25u width)
+    private let keycapWidth: CGFloat = 180
+    private let keycapHeight: CGFloat = 56
+    private let keycapDepth: CGFloat = 12
+    private let keycapCornerRadius: CGFloat = 8
+    private let maxTravel: CGFloat = 4
+
     private var purchaseButton: some View {
-        let keyWidth: CGFloat = 220
-        let keyHeight: CGFloat = 56
-        let cornerRadius: CGFloat = 12
-        let maxTravel: CGFloat = 4
+        ZStack {
+            // LED underglow (beneath everything) - warm amber glow
+            ledUnderglow
 
-        return ZStack {
-            // Shadow depth
-            RoundedRectangle(cornerRadius: cornerRadius + 1)
-                .fill(shadowDark.opacity(isDarkMode ? 0.5 : 0.35))
-                .frame(width: keyWidth, height: keyHeight)
-                .offset(y: 5 - purchaseButtonDepth * 0.5)
-                .blur(radius: 3)
+            // Switch housing / plate
+            keycapSwitchHousing
 
-            // Housing recess
-            RoundedRectangle(cornerRadius: cornerRadius + 2)
-                .fill(accentColor.opacity(0.3))
-                .frame(width: keyWidth + 8, height: keyHeight + 8)
-                .offset(y: 4)
-
-            // Main button
-            ZStack {
-                // Base
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                accentColor,
-                                accentColor.opacity(0.85)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .frame(width: keyWidth, height: keyHeight)
-
-                // Top highlight
-                RoundedRectangle(cornerRadius: cornerRadius - 1)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.25),
-                                Color.clear
-                            ],
-                            startPoint: .top,
-                            endPoint: .center
-                        )
-                    )
-                    .frame(width: keyWidth - 4, height: keyHeight - 4)
-
-                // Border
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                    .frame(width: keyWidth, height: keyHeight)
-
-                // Content - dynamic price from RevenueCat
-                HStack(spacing: 10) {
-                    if let price = purchaseManager.lifetimePrice {
-                        Text(price)
-                            .font(.system(size: 20, weight: .bold, design: .rounded))
-
-                        Text("lifetime")
-                            .font(.system(size: 14, weight: .medium))
-                            .opacity(0.75)
-                    } else {
-                        // Loading placeholder
-                        ProgressView()
-                            .tint(.white)
-                            .scaleEffect(0.8)
-                    }
-                }
-                .foregroundColor(.white)
-            }
-            .offset(y: -purchaseButtonDepth)
+            // The keycap itself
+            purchaseKeycap
         }
+        .frame(width: keycapWidth + 24, height: keycapHeight + 28)
         .opacity(appeared ? 1 : 0)
         .scaleEffect(appeared ? 1 : 0.9)
-        .gesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    // Disable if purchasing or price not loaded
-                    guard !isPurchasing, purchaseManager.lifetimePrice != nil else { return }
-                    if !isPurchaseButtonPressed {
-                        isPurchaseButtonPressed = true
-                        withAnimation(.interpolatingSpring(stiffness: 800, damping: 15)) {
-                            purchaseButtonDepth = maxTravel
-                        }
-                        hapticEngine?.playDetent()
-                        soundEngine?.play(.keyThock)
-                    }
-                }
-                .onEnded { _ in
-                    guard !isPurchasing, purchaseManager.lifetimePrice != nil else { return }
-                    isPurchaseButtonPressed = false
-                    withAnimation(.interpolatingSpring(stiffness: 600, damping: 18)) {
-                        purchaseButtonDepth = 0
-                    }
-                    hapticEngine?.playDetent()
-                    soundEngine?.play(.keyClack)
+        .gesture(purchaseKeyGesture)
+    }
 
-                    // Trigger purchase
-                    performPurchase()
-                }
+    // MARK: - LED Underglow
+
+    private var ledUnderglow: some View {
+        RoundedRectangle(cornerRadius: keycapCornerRadius + 4)
+            .fill(
+                RadialGradient(
+                    colors: [
+                        ctaAccentColor.opacity(isPurchaseButtonPressed ? 0.9 : 0.5),
+                        ctaAccentColor.opacity(isPurchaseButtonPressed ? 0.5 : 0.2),
+                        Color.clear
+                    ],
+                    center: .center,
+                    startRadius: 0,
+                    endRadius: keycapWidth * 0.6
+                )
+            )
+            .frame(width: keycapWidth + 28, height: keycapHeight + 20)
+            .blur(radius: 10)  // Reduced from 14 for better performance
+            .offset(y: 6)
+            .drawingGroup()  // Rasterize blur
+            .animation(.easeOut(duration: 0.15), value: isPurchaseButtonPressed)
+    }
+
+    // MARK: - Switch Housing
+
+    private var keycapSwitchHousing: some View {
+        ZStack {
+            // Plate cutout (dark recess)
+            RoundedRectangle(cornerRadius: keycapCornerRadius + 2)
+                .fill(Color.black.opacity(isDarkMode ? 0.6 : 0.4))
+                .frame(width: keycapWidth + 6, height: keycapHeight + 6)
+                .offset(y: 8)
+
+            // Switch housing visible inside
+            RoundedRectangle(cornerRadius: keycapCornerRadius)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(hex: isDarkMode ? 0x1A1A1C : 0x2A2A2C),
+                            Color(hex: isDarkMode ? 0x252527 : 0x3A3A3C)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(width: keycapWidth - 4, height: keycapHeight - 4)
+                .offset(y: 8 + purchaseButtonDepth)
+
+            // Stem cross (visible when key is pressed)
+            keycapStemCross
+                .opacity(Double(purchaseButtonDepth / maxTravel) * 0.7)
+        }
+    }
+
+    private var keycapStemCross: some View {
+        ZStack {
+            // Vertical bar
+            RoundedRectangle(cornerRadius: 0.5)
+                .fill(ctaAccentColor.opacity(0.9))
+                .frame(width: 2, height: 10)
+
+            // Horizontal bar
+            RoundedRectangle(cornerRadius: 0.5)
+                .fill(ctaAccentColor.opacity(0.9))
+                .frame(width: 6, height: 2)
+        }
+        .offset(y: 8)
+    }
+
+    // MARK: - Purchase Keycap
+
+    private var purchaseKeycap: some View {
+        ZStack {
+            // Keycap base (bottom edge - creates 3D depth)
+            purchaseKeycapBase
+
+            // Keycap body (the main visible part)
+            purchaseKeycapBody
+
+            // Top surface with dish
+            purchaseKeycapTop
+
+            // Legend (price + text)
+            purchaseKeycapLegend
+        }
+        .offset(y: -keycapDepth / 2 + purchaseButtonDepth)
+        .offset(x: wobbleOffset)
+        .animation(.interpolatingSpring(stiffness: 800, damping: 15), value: purchaseButtonDepth)
+        .animation(.interpolatingSpring(stiffness: 1000, damping: 10), value: wobbleOffset)
+    }
+
+    private var purchaseKeycapBase: some View {
+        RoundedRectangle(cornerRadius: keycapCornerRadius + 1)
+            .fill(keycapSideColor)
+            .frame(width: keycapWidth, height: keycapHeight)
+            .shadow(
+                color: shadowDark.opacity(isDarkMode ? 0.8 : 0.5),
+                radius: 5,
+                x: 0,
+                y: 5
+            )
+    }
+
+    private var purchaseKeycapBody: some View {
+        ZStack {
+            // Main body with side gradient (shows depth)
+            RoundedRectangle(cornerRadius: keycapCornerRadius)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            keycapColor,
+                            keycapSideColor
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(width: keycapWidth - 2, height: keycapHeight - 2)
+
+            // Side highlight (left edge catch light)
+            RoundedRectangle(cornerRadius: keycapCornerRadius)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            shadowLight.opacity(isDarkMode ? 0.15 : 0.4),
+                            Color.clear,
+                            Color.clear
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .frame(width: keycapWidth - 2, height: keycapHeight - 2)
+        }
+        .offset(y: -keycapDepth / 3)
+    }
+
+    private var purchaseKeycapTop: some View {
+        ZStack {
+            // Top surface base
+            RoundedRectangle(cornerRadius: keycapCornerRadius - 1)
+                .fill(keycapTopColor)
+                .frame(width: keycapWidth - 8, height: keycapHeight - 8)
+
+            // Dish effect (subtle concave scoop)
+            RoundedRectangle(cornerRadius: keycapCornerRadius - 2)
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            shadowDark.opacity(isDarkMode ? 0.12 : 0.08),
+                            Color.clear,
+                            shadowLight.opacity(isDarkMode ? 0.08 : 0.15)
+                        ],
+                        center: UnitPoint(x: 0.5, y: 0.6),
+                        startRadius: 0,
+                        endRadius: keycapWidth * 0.4
+                    )
+                )
+                .frame(width: keycapWidth - 12, height: keycapHeight - 12)
+
+            // Top edge highlight
+            RoundedRectangle(cornerRadius: keycapCornerRadius - 1)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            shadowLight.opacity(isDarkMode ? 0.25 : 0.6),
+                            Color.clear,
+                            shadowDark.opacity(isDarkMode ? 0.2 : 0.15)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+                .frame(width: keycapWidth - 8, height: keycapHeight - 8)
+        }
+        .offset(y: -keycapDepth * 0.7)
+    }
+
+    private var purchaseKeycapLegend: some View {
+        HStack(spacing: 8) {
+            if let price = purchaseManager.lifetimePrice {
+                Text(price)
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundColor(isPurchaseButtonPressed ? ctaAccentColor : textPrimary)
+
+                Text("·")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(textTertiary)
+
+                // LIFETIME text with green LED glow and pulse
+                Text("LIFETIME")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundColor(greenLedColor)
+                    .tracking(1.5)
+                    .shadow(
+                        color: greenLedColor.opacity(lifetimePulse ? 0.8 : 0.4),
+                        radius: lifetimePulse ? 8 : 4
+                    )
+                    .shadow(
+                        color: greenLedColor.opacity(lifetimePulse ? 0.5 : 0.2),
+                        radius: lifetimePulse ? 12 : 6
+                    )
+                    .animation(
+                        .easeInOut(duration: 1.5).repeatForever(autoreverses: true),
+                        value: lifetimePulse
+                    )
+            } else {
+                // Loading placeholder
+                ProgressView()
+                    .scaleEffect(0.8)
+                    .tint(textSecondary)
+            }
+        }
+        .offset(y: -keycapDepth * 0.7)
+        .shadow(
+            color: isPurchaseButtonPressed ? ctaAccentColor.opacity(0.4) : Color.clear,
+            radius: 6
         )
+        .animation(.easeInOut(duration: 0.15), value: isPurchaseButtonPressed)
+    }
+
+    // MARK: - Purchase Key Gesture
+
+    private var purchaseKeyGesture: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { _ in
+                // Disable if purchasing or price not loaded
+                guard !isPurchasing, purchaseManager.lifetimePrice != nil else { return }
+                if !isPurchaseButtonPressed {
+                    isPurchaseButtonPressed = true
+                    purchaseButtonDepth = maxTravel
+
+                    // Add slight random wobble for realism
+                    wobbleOffset = CGFloat.random(in: -0.5...0.5)
+
+                    // Haptic and sound
+                    hapticEngine?.playDetent()
+                    soundEngine?.play(.keyThock)
+                }
+            }
+            .onEnded { _ in
+                guard !isPurchasing, purchaseManager.lifetimePrice != nil else { return }
+                isPurchaseButtonPressed = false
+                purchaseButtonDepth = 0
+                wobbleOffset = 0
+
+                // Release haptic and sound
+                hapticEngine?.playDetent()
+                soundEngine?.play(.keyClack)
+
+                // Trigger purchase
+                performPurchase()
+            }
     }
 
     // MARK: - Bottom Buttons
 
     private var bottomButtons: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 12) {
             HStack(spacing: 24) {
                 // Restore button
                 Button {
@@ -345,7 +527,7 @@ struct PurchaseSheetView: View {
                 } label: {
                     Text("Restore")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(textSecondary.opacity(0.7))
+                        .foregroundColor(textTertiary)
                 }
                 .buttonStyle(.plain)
 
@@ -356,14 +538,14 @@ struct PurchaseSheetView: View {
                 } label: {
                     Text("Not now")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(textSecondary.opacity(0.7))
+                        .foregroundColor(textTertiary)
                 }
                 .buttonStyle(.plain)
             }
 
             Link("Privacy Policy", destination: privacyPolicyURL)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(textSecondary.opacity(0.7))
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(textTertiary.opacity(0.8))
                 .buttonStyle(.plain)
         }
         .opacity(appeared ? 1 : 0)
