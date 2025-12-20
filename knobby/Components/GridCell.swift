@@ -120,6 +120,8 @@ struct NeumorphicCell<Content: View>: View {
                         lineWidth: 1
                     )
             }
+            // Composite content before applying shadows for better scroll performance
+            .compositingGroup()
             // Light source shadow (top-left highlight) - dynamic
             .shadow(
                 color: shadowLightColor.opacity(isDarkMode ? 0.25 : 0.7),
