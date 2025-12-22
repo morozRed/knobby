@@ -91,6 +91,18 @@ struct SensoryWallView: View {
         showPurchaseSheet = true
     }
 
+    @ViewBuilder
+    private func unlockedContent<Content: View>(
+        _ isLocked: Bool,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        if isLocked {
+            EmptyView()
+        } else {
+            content()
+        }
+    }
+
     // MARK: - Objects Layout (Grid with Neumorphic Cells)
 
     private func objectsLayout(in geometry: GeometryProxy, safeTop: CGFloat) -> some View {
@@ -120,38 +132,44 @@ struct SensoryWallView: View {
 
                 // Row 1: Main Knob (hero, FREE) + Theme Toggle (FREE)
                 HStack(spacing: spacing) {
+                    let isLocked0 = isLocked(0)
                     NeumorphicCell(
-                        isLocked: isLocked(0),
+                        isLocked: isLocked0,
                         themeManager: themeManager,
                         motionManager: motionManager,
                         hapticEngine: hapticEngine,
                         soundEngine: soundEngine,
                         onUnlockTapped: showUnlock
                     ) {
-                        KnobView(
-                            motionManager: motionManager,
-                            hapticEngine: hapticEngine,
-                            soundEngine: soundEngine,
-                            themeManager: themeManager
-                        )
+                        unlockedContent(isLocked0) {
+                            KnobView(
+                                motionManager: motionManager,
+                                hapticEngine: hapticEngine,
+                                soundEngine: soundEngine,
+                                themeManager: themeManager
+                            )
+                        }
                     }
                     .frame(width: largeCellWidth, height: tallCellHeight)
                     .popFromSurface(isVisible: cellHasAppeared(0), reduceMotion: reduceMotion)
 
+                    let isLocked1 = isLocked(1)
                     NeumorphicCell(
-                        isLocked: isLocked(1),
+                        isLocked: isLocked1,
                         themeManager: themeManager,
                         motionManager: motionManager,
                         hapticEngine: hapticEngine,
                         soundEngine: soundEngine,
                         onUnlockTapped: showUnlock
                     ) {
-                        ThemeToggleView(
-                            themeManager: themeManager,
-                            motionManager: motionManager,
-                            hapticEngine: hapticEngine,
-                            soundEngine: soundEngine
-                        )
+                        unlockedContent(isLocked1) {
+                            ThemeToggleView(
+                                themeManager: themeManager,
+                                motionManager: motionManager,
+                                hapticEngine: hapticEngine,
+                                soundEngine: soundEngine
+                            )
+                        }
                     }
                     .frame(width: mediumCellWidth, height: tallCellHeight)
                     .popFromSurface(isVisible: cellHasAppeared(1), reduceMotion: reduceMotion)
@@ -159,38 +177,44 @@ struct SensoryWallView: View {
 
                 // Row 2: Pressure Button (LOCKED) + Joystick (LOCKED)
                 HStack(spacing: spacing) {
+                    let isLocked2 = isLocked(2)
                     NeumorphicCell(
-                        isLocked: isLocked(2),
+                        isLocked: isLocked2,
                         themeManager: themeManager,
                         motionManager: motionManager,
                         hapticEngine: hapticEngine,
                         soundEngine: soundEngine,
                         onUnlockTapped: showUnlock
                     ) {
-                        PressureButtonView(
-                            motionManager: motionManager,
-                            hapticEngine: hapticEngine,
-                            soundEngine: soundEngine,
-                            themeManager: themeManager
-                        )
+                        unlockedContent(isLocked2) {
+                            PressureButtonView(
+                                motionManager: motionManager,
+                                hapticEngine: hapticEngine,
+                                soundEngine: soundEngine,
+                                themeManager: themeManager
+                            )
+                        }
                     }
                     .frame(width: smallCellSize, height: standardCellHeight)
                     .popFromSurface(isVisible: cellHasAppeared(2), reduceMotion: reduceMotion)
 
+                    let isLocked3 = isLocked(3)
                     NeumorphicCell(
-                        isLocked: isLocked(3),
+                        isLocked: isLocked3,
                         themeManager: themeManager,
                         motionManager: motionManager,
                         hapticEngine: hapticEngine,
                         soundEngine: soundEngine,
                         onUnlockTapped: showUnlock
                     ) {
-                        JoystickView(
-                            motionManager: motionManager,
-                            hapticEngine: hapticEngine,
-                            soundEngine: soundEngine,
-                            themeManager: themeManager
-                        )
+                        unlockedContent(isLocked3) {
+                            JoystickView(
+                                motionManager: motionManager,
+                                hapticEngine: hapticEngine,
+                                soundEngine: soundEngine,
+                                themeManager: themeManager
+                            )
+                        }
                     }
                     .frame(width: smallCellSize, height: standardCellHeight)
                     .popFromSurface(isVisible: cellHasAppeared(3), reduceMotion: reduceMotion)
@@ -198,143 +222,164 @@ struct SensoryWallView: View {
 
                 // Row 3: Roller Ball (LOCKED) + Toggle Switch (FREE)
                 HStack(spacing: spacing) {
+                    let isLocked4 = isLocked(4)
                     NeumorphicCell(
-                        isLocked: isLocked(4),
+                        isLocked: isLocked4,
                         themeManager: themeManager,
                         motionManager: motionManager,
                         hapticEngine: hapticEngine,
                         soundEngine: soundEngine,
                         onUnlockTapped: showUnlock
                     ) {
-                        RollerBallView(
-                            motionManager: motionManager,
-                            hapticEngine: hapticEngine,
-                            soundEngine: soundEngine,
-                            themeManager: themeManager
-                        )
+                        unlockedContent(isLocked4) {
+                            RollerBallView(
+                                motionManager: motionManager,
+                                hapticEngine: hapticEngine,
+                                soundEngine: soundEngine,
+                                themeManager: themeManager
+                            )
+                        }
                     }
                     .frame(width: smallCellSize, height: standardCellHeight)
                     .popFromSurface(isVisible: cellHasAppeared(4), reduceMotion: reduceMotion)
 
+                    let isLocked5 = isLocked(5)
                     NeumorphicCell(
-                        isLocked: isLocked(5),
+                        isLocked: isLocked5,
                         themeManager: themeManager,
                         motionManager: motionManager,
                         hapticEngine: hapticEngine,
                         soundEngine: soundEngine,
                         onUnlockTapped: showUnlock
                     ) {
-                        ToggleSwitchView(
-                            motionManager: motionManager,
-                            hapticEngine: hapticEngine,
-                            soundEngine: soundEngine,
-                            themeManager: themeManager
-                        )
+                        unlockedContent(isLocked5) {
+                            ToggleSwitchView(
+                                motionManager: motionManager,
+                                hapticEngine: hapticEngine,
+                                soundEngine: soundEngine,
+                                themeManager: themeManager
+                            )
+                        }
                     }
                     .frame(width: smallCellSize, height: standardCellHeight)
                     .popFromSurface(isVisible: cellHasAppeared(5), reduceMotion: reduceMotion)
                 }
 
                 // Row 4: Bubble Pop (LOCKED, full width)
+                let isLocked6 = isLocked(6)
                 NeumorphicCell(
-                    isLocked: isLocked(6),
+                    isLocked: isLocked6,
                     themeManager: themeManager,
                     motionManager: motionManager,
                     hapticEngine: hapticEngine,
                     soundEngine: soundEngine,
                     onUnlockTapped: showUnlock
                 ) {
-                    BubblePopView(
-                        motionManager: motionManager,
-                        hapticEngine: hapticEngine,
-                        soundEngine: soundEngine,
-                        themeManager: themeManager
-                    )
+                    unlockedContent(isLocked6) {
+                        BubblePopView(
+                            motionManager: motionManager,
+                            hapticEngine: hapticEngine,
+                            soundEngine: soundEngine,
+                            themeManager: themeManager
+                        )
+                    }
                 }
                 .frame(width: availableWidth, height: shortCellHeight)
                 .popFromSurface(isVisible: cellHasAppeared(6), reduceMotion: reduceMotion)
 
                 // Row 5: Frequency Dial (LOCKED) + Keycap (LOCKED)
                 HStack(spacing: spacing) {
+                    let isLocked7 = isLocked(7)
                     NeumorphicCell(
-                        isLocked: isLocked(7),
+                        isLocked: isLocked7,
                         themeManager: themeManager,
                         motionManager: motionManager,
                         hapticEngine: hapticEngine,
                         soundEngine: soundEngine,
                         onUnlockTapped: showUnlock
                     ) {
-                        FrequencyDialView(
-                            motionManager: motionManager,
-                            hapticEngine: hapticEngine,
-                            soundEngine: soundEngine,
-                            themeManager: themeManager
-                        )
+                        unlockedContent(isLocked7) {
+                            FrequencyDialView(
+                                motionManager: motionManager,
+                                hapticEngine: hapticEngine,
+                                soundEngine: soundEngine,
+                                themeManager: themeManager
+                            )
+                        }
                     }
                     .frame(width: smallCellSize, height: standardCellHeight)
                     .popFromSurface(isVisible: cellHasAppeared(7), reduceMotion: reduceMotion)
 
+                    let isLocked8 = isLocked(8)
                     NeumorphicCell(
-                        isLocked: isLocked(8),
+                        isLocked: isLocked8,
                         themeManager: themeManager,
                         motionManager: motionManager,
                         hapticEngine: hapticEngine,
                         soundEngine: soundEngine,
                         onUnlockTapped: showUnlock
                     ) {
-                        MechanicalKeycapView(
-                            motionManager: motionManager,
-                            hapticEngine: hapticEngine,
-                            soundEngine: soundEngine,
-                            themeManager: themeManager,
-                            primaryIcon: "power",
-                            primaryText: "OFF",
-                            secondaryIcon: "bolt.fill",
-                            secondaryText: "ON",
-                            accentColor: Color(hex: 0x7C5CFF)
-                        )
+                        unlockedContent(isLocked8) {
+                            MechanicalKeycapView(
+                                motionManager: motionManager,
+                                hapticEngine: hapticEngine,
+                                soundEngine: soundEngine,
+                                themeManager: themeManager,
+                                primaryIcon: "power",
+                                primaryText: "OFF",
+                                secondaryIcon: "bolt.fill",
+                                secondaryText: "ON",
+                                accentColor: Color(hex: 0x7C5CFF)
+                            )
+                        }
                     }
                     .frame(width: smallCellSize, height: standardCellHeight)
                     .popFromSurface(isVisible: cellHasAppeared(8), reduceMotion: reduceMotion)
                 }
 
                 // Row 6: Tap Pad (LOCKED, full width)
+                let isLocked9 = isLocked(9)
                 NeumorphicCell(
-                    isLocked: isLocked(9),
+                    isLocked: isLocked9,
                     themeManager: themeManager,
                     motionManager: motionManager,
                     hapticEngine: hapticEngine,
                     soundEngine: soundEngine,
                     onUnlockTapped: showUnlock
                 ) {
-                    TapPadView(
-                        motionManager: motionManager,
-                        hapticEngine: hapticEngine,
-                        soundEngine: soundEngine,
-                        themeManager: themeManager
-                    )
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 2)
+                    unlockedContent(isLocked9) {
+                        TapPadView(
+                            motionManager: motionManager,
+                            hapticEngine: hapticEngine,
+                            soundEngine: soundEngine,
+                            themeManager: themeManager
+                        )
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                    }
                 }
                 .frame(width: availableWidth, height: standardCellHeight)
                 .popFromSurface(isVisible: cellHasAppeared(9), reduceMotion: reduceMotion)
 
                 // Row 7: Pressure Meter (LOCKED) + Branding Plate (decorative)
                 HStack(spacing: spacing) {
+                    let isLocked10 = isLocked(10)
                     NeumorphicCell(
-                        isLocked: isLocked(10),
+                        isLocked: isLocked10,
                         themeManager: themeManager,
                         motionManager: motionManager,
                         hapticEngine: hapticEngine,
                         soundEngine: soundEngine,
                         onUnlockTapped: showUnlock
                     ) {
-                        PressureMeterView(
-                            motionManager: motionManager,
-                            hapticEngine: hapticEngine,
-                            soundEngine: soundEngine,
-                            themeManager: themeManager
-                        )
+                        unlockedContent(isLocked10) {
+                            PressureMeterView(
+                                motionManager: motionManager,
+                                hapticEngine: hapticEngine,
+                                soundEngine: soundEngine,
+                                themeManager: themeManager
+                            )
+                        }
                     }
                     .frame(width: smallCellSize, height: standardCellHeight)
                     .popFromSurface(isVisible: cellHasAppeared(10), reduceMotion: reduceMotion)
@@ -382,7 +427,6 @@ struct SensoryWallView: View {
                 endPoint: .bottomTrailing
             )
         }
-        .drawingGroup() // Rasterize entire background stack
         .ignoresSafeArea()
     }
 
@@ -414,7 +458,6 @@ struct SensoryWallView: View {
             )
             .ignoresSafeArea()
         }
-        .drawingGroup() // Rasterize gradients to avoid per-frame recalculation
         .allowsHitTesting(false)
     }
 
