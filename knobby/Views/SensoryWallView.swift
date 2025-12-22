@@ -6,8 +6,6 @@ struct SensoryWallView: View {
     @State private var soundEngine = SoundEngine()
     @State private var themeManager = ThemeManager()
 
-    @State private var showFirstLaunchHint = true
-    @State private var hasInteracted = false
     @State private var showPurchaseSheet = false
 
     // MARK: - Pop Animation State
@@ -42,14 +40,6 @@ struct SensoryWallView: View {
 
                 // All content in a single ScrollView - status bar scrolls with content
                 objectsLayout(in: geometry, safeTop: safeTop)
-                    .simultaneousGesture(
-                        TapGesture().onEnded { dismissHint() }
-                    )
-
-                // First launch hint
-                if showFirstLaunchHint {
-                    firstLaunchHint
-                }
             }
         }
         .statusBarHidden()
@@ -58,7 +48,6 @@ struct SensoryWallView: View {
         .onAppear {
             motionManager.reduceMotion = reduceMotion
             motionManager.startUpdates()
-            checkFirstLaunch()
             startPopAnimation()
         }
         .onDisappear {
@@ -427,52 +416,6 @@ struct SensoryWallView: View {
         }
         .drawingGroup() // Rasterize gradients to avoid per-frame recalculation
         .allowsHitTesting(false)
-    }
-
-    // MARK: - First Launch Hint
-
-    private var firstLaunchHint: some View {
-        VStack {
-            Spacer()
-
-            Text("Touch anything. There's nothing to finish.")
-                .font(.system(size: 15, weight: .medium, design: .rounded))
-                .tracking(0.3)
-                .foregroundColor(themeManager.textSubtle)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
-                .padding(.bottom, 60)
-                .transition(.opacity)
-        }
-        .allowsHitTesting(false)
-    }
-
-    // MARK: - Helpers
-
-    private func dismissHint() {
-        guard showFirstLaunchHint else { return }
-
-        withAnimation(.easeOut(duration: 0.5)) {
-            showFirstLaunchHint = false
-        }
-
-        // Mark as interacted (persist for future launches)
-        if !hasInteracted {
-            hasInteracted = true
-            UserDefaults.standard.set(true, forKey: "knobby.hasInteracted")
-        }
-    }
-
-    private func checkFirstLaunch() {
-        hasInteracted = UserDefaults.standard.bool(forKey: "knobby.hasInteracted")
-        if hasInteracted {
-            showFirstLaunchHint = false
-        } else {
-            // Auto-dismiss after 5 seconds per PRD
-            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                dismissHint()
-            }
-        }
     }
 
     // MARK: - Pop Animation
