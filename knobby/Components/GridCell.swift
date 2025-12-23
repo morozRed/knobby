@@ -32,14 +32,6 @@ struct NeumorphicCell<Content: View>: View {
         self.content = content
     }
 
-    private var surfaceColor: Color {
-        themeManager?.surface ?? KnobbyColors.surface
-    }
-
-    private var surfaceDarkColor: Color {
-        themeManager?.surfaceDark ?? KnobbyColors.surfaceDark
-    }
-
     private var shadowDarkColor: Color {
         themeManager?.shadowDark ?? KnobbyColors.shadowDark
     }
@@ -87,62 +79,64 @@ struct NeumorphicCell<Content: View>: View {
             reduceMotion: reduceMotion
         )
 
-        return RoundedRectangle(cornerRadius: 24, style: .continuous)
-            .fill(surfaceColor)
-            .overlay {
-                // Inner gradient for 3D convex surface - light shifts with tilt
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(isDarkMode ? 0.12 : 0.25),
-                                Color.clear,
-                                shadowDarkColor.opacity(isDarkMode ? 0.12 : 0.08)
-                            ],
-                            startPoint: edgePoints.start,
-                            endPoint: edgePoints.end
-                        )
+        let lightOpacity = isDarkMode ? 0.25 : 0.7
+        let darkOpacity = isDarkMode ? 0.6 : 0.35
+        let ambientOpacity = isDarkMode ? 0.25 : 0.15
+        let lightRadius: CGFloat = isDarkMode ? 6 : 8
+        let darkRadius: CGFloat = isDarkMode ? 8 : 10
+        let ambientRadius: CGFloat = 16
+
+        return CachedNeumorphicPanel(
+            themeManager: themeManager,
+            cornerRadius: 24
+        )
+        .background {
+            CachedNeumorphicShadows(
+                themeKey: isDarkMode ? 1 : 0,
+                cornerRadius: 24,
+                lightColor: shadowLightColor,
+                darkColor: shadowDarkColor,
+                lightOpacity: lightOpacity,
+                darkOpacity: darkOpacity,
+                ambientOpacity: ambientOpacity,
+                lightRadius: lightRadius,
+                darkRadius: darkRadius,
+                ambientRadius: ambientRadius,
+                lightOffset: shadowOffsets.light,
+                darkOffset: shadowOffsets.dark
+            )
+        }
+        .overlay {
+            // Inner gradient for 3D convex surface - light shifts with tilt
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(isDarkMode ? 0.12 : 0.25),
+                            Color.clear,
+                            shadowDarkColor.opacity(isDarkMode ? 0.12 : 0.08)
+                        ],
+                        startPoint: edgePoints.start,
+                        endPoint: edgePoints.end
                     )
-            }
-            .overlay {
-                // Border highlight - dynamic edge catching light
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(isDarkMode ? 0.4 : 0.9),
-                                Color.white.opacity(isDarkMode ? 0.15 : 0.4),
-                                shadowDarkColor.opacity(isDarkMode ? 0.4 : 0.3)
-                            ],
-                            startPoint: edgePoints.start,
-                            endPoint: edgePoints.end
-                        ),
-                        lineWidth: 1
-                    )
-            }
-            // Composite content before applying shadows for better scroll performance
-            .compositingGroup()
-            // Light source shadow (top-left highlight) - dynamic
-            .shadow(
-                color: shadowLightColor.opacity(isDarkMode ? 0.25 : 0.7),
-                radius: isDarkMode ? 6 : 8,
-                x: shadowOffsets.light.width,
-                y: shadowOffsets.light.height
-            )
-            // Primary depth shadow (bottom-right) - dynamic
-            .shadow(
-                color: shadowDarkColor.opacity(isDarkMode ? 0.6 : 0.35),
-                radius: isDarkMode ? 8 : 10,
-                x: shadowOffsets.dark.width,
-                y: shadowOffsets.dark.height
-            )
-            // Soft ambient shadow for extra depth - follows dark shadow
-            .shadow(
-                color: shadowDarkColor.opacity(isDarkMode ? 0.25 : 0.15),
-                radius: 16,
-                x: shadowOffsets.dark.width * 1.6,
-                y: shadowOffsets.dark.height * 2
-            )
+                )
+        }
+        .overlay {
+            // Border highlight - dynamic edge catching light
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(isDarkMode ? 0.4 : 0.9),
+                            Color.white.opacity(isDarkMode ? 0.15 : 0.4),
+                            shadowDarkColor.opacity(isDarkMode ? 0.4 : 0.3)
+                        ],
+                        startPoint: edgePoints.start,
+                        endPoint: edgePoints.end
+                    ),
+                    lineWidth: 1
+                )
+        }
     }
 
     // MARK: - Lock Overlay
