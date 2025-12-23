@@ -13,8 +13,14 @@ struct SensoryWallView: View {
     @State private var randomizedOrder: [Int] = []
     private let totalCells = 12
 
+    // MARK: - Unlock Animation State
+    @State private var revealedCells: Set<Int> = []
+
     // Unlocked cells (free tier): Knob, Theme Toggle, Toggle Switch, Branding Plate
     private let freeCells: Set<Int> = [0, 1, 5, 11]
+
+    // Cells that are locked for free users (complement of freeCells)
+    private let lockedCellIndices: [Int] = [2, 3, 4, 6, 7, 8, 9, 10]
 
     // Purchase manager - observed for pro status changes
     private var purchaseManager = PurchaseManager.shared
@@ -44,17 +50,28 @@ struct SensoryWallView: View {
         }
         .statusBarHidden()
         .ignoresSafeArea()
-        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: isProUser)
+        // Removed global animation - staggered unlock now handled by animateUnlock()
         .onAppear {
             motionManager.reduceMotion = reduceMotion
             motionManager.startUpdates()
             startPopAnimation()
+
+            // If already pro, mark all locked cells as revealed (no stagger needed)
+            if purchaseManager.isProUser {
+                revealedCells = Set(lockedCellIndices)
+            }
         }
         .onDisappear {
             motionManager.stopUpdates()
         }
         .onChange(of: reduceMotion) { _, newValue in
             motionManager.reduceMotion = newValue
+        }
+        .onChange(of: purchaseManager.isProUser) { wasProUser, isProUser in
+            // Trigger staggered unlock animation when user becomes pro
+            if isProUser && !wasProUser {
+                animateUnlock()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
             motionManager.stopUpdates()
@@ -79,12 +96,16 @@ struct SensoryWallView: View {
     // MARK: - Lock State Helper
 
     private func isLocked(_ cellIndex: Int) -> Bool {
-        // If user is pro, nothing is locked
-        if purchaseManager.isProUser {
+        // Free cells are never locked
+        if freeCells.contains(cellIndex) {
             return false
         }
-        // Otherwise, only free cells are unlocked
-        return !freeCells.contains(cellIndex)
+        // Pro users: check if cell has been revealed (for staggered animation)
+        if purchaseManager.isProUser {
+            return !revealedCells.contains(cellIndex)
+        }
+        // Non-pro: locked
+        return true
     }
 
     private func showUnlock() {
@@ -490,6 +511,23 @@ struct SensoryWallView: View {
 
     private func cellHasAppeared(_ index: Int) -> Bool {
         reduceMotion || cellsAppeared.contains(index)
+    }
+
+    // MARK: - Unlock Animation
+
+    /// Stagger the unlock animation to spread GPU load across multiple frames
+    private func animateUnlock() {
+        // Shuffle for organic feel (similar to startPopAnimation)
+        let shuffled = lockedCellIndices.shuffled()
+
+        for (index, cellIndex) in shuffled.enumerated() {
+            let delay = Double(index) * 0.06  // 60ms between each cell
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                    _ = revealedCells.insert(cellIndex)
+                }
+            }
+        }
     }
 }
 

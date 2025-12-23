@@ -199,6 +199,7 @@ struct LockedCellOverlay: View {
             )
             .frame(width: width + 24, height: height + 24)
             .blur(radius: 14)
+            .drawingGroup()  // Rasterize the blur for better performance
             .offset(y: 6)
             .animation(.easeOut(duration: 0.12), value: isKeyPressed)
     }

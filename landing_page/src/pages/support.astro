@@ -1,0 +1,377 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Support — Knobby" description="Get help with Knobby">
+  <main>
+    <article>
+      <a href="/" class="back">Knobby</a>
+
+      <header>
+        <div class="dial-icon">
+          <div class="dial-ring"></div>
+          <div class="dial-center"></div>
+          <div class="dial-dot"></div>
+        </div>
+        <h1>How can we help?</h1>
+      </header>
+
+      <section class="contact-card">
+        <p class="intro">Knobby is designed to be simple and intuitive. If something isn't working as expected, or you have a suggestion, we'd love to hear from you.</p>
+
+        <a href="mailto:grig@morozred.com" class="email-link">
+          <span class="email-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2.5 6.5L9.47 11.12C9.63 11.23 9.81 11.29 10 11.29C10.19 11.29 10.37 11.23 10.53 11.12L17.5 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="2" y="4" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </span>
+          <span class="email-text">grig@morozred.com</span>
+          <span class="email-arrow">→</span>
+        </a>
+      </section>
+
+      <section class="faq">
+        <h2>Common Questions</h2>
+
+        <details>
+          <summary>
+            <span class="question">The haptics don't feel right</span>
+            <span class="toggle-icon"></span>
+          </summary>
+          <div class="answer">
+            <p>Make sure your device's haptic feedback is enabled in Settings → Sounds & Haptics. You can also adjust haptic intensity within Knobby using a two-finger long press to access settings.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>
+            <span class="question">How do I access settings?</span>
+            <span class="toggle-icon"></span>
+          </summary>
+          <div class="answer">
+            <p>Press and hold anywhere on the screen with two fingers to reveal the settings panel. From there you can adjust haptic intensity, toggle sounds, and configure motion preferences.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>
+            <span class="question">Can I restore my purchase?</span>
+            <span class="toggle-icon"></span>
+          </summary>
+          <div class="answer">
+            <p>Yes. Open settings with a two-finger long press, then tap "Restore Purchases". Your lifetime unlock will be restored automatically if you've previously purchased it.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>
+            <span class="question">The app feels sluggish</span>
+            <span class="toggle-icon"></span>
+          </summary>
+          <div class="answer">
+            <p>Try enabling "Reduce Motion" in settings if you experience performance issues on older devices. This simplifies animations while preserving the tactile experience.</p>
+          </div>
+        </details>
+      </section>
+
+      <section class="response-note">
+        <p>We typically respond within 24 hours. Thanks for using Knobby.</p>
+      </section>
+    </article>
+  </main>
+</Layout>
+
+<style>
+  main {
+    min-height: 100dvh;
+    padding: 4rem 2rem 6rem;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .back {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: var(--text);
+    display: inline-block;
+    margin-bottom: 3rem;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .dial-icon {
+    width: 48px;
+    height: 48px;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .dial-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: linear-gradient(
+      180deg,
+      #F5F5F4 0%,
+      #E7E5E4 50%,
+      #DCDAD8 100%
+    );
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -1px 2px rgba(0, 0, 0, 0.04);
+  }
+
+  .dial-center {
+    position: absolute;
+    inset: 8px;
+    border-radius: 50%;
+    background: linear-gradient(
+      180deg,
+      #EEECE9 0%,
+      #E4E2DF 100%
+    );
+    box-shadow:
+      inset 0 1px 2px rgba(255, 255, 255, 0.7),
+      inset 0 -1px 1px rgba(0, 0, 0, 0.03);
+  }
+
+  .dial-dot {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #C9A77C 0%, #A08060 100%);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  }
+
+  h1 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 1.75rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+
+  .contact-card {
+    background: linear-gradient(180deg, #FFFFFF 0%, #FDFCFB 100%);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.75rem;
+    margin-bottom: 3rem;
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      0 4px 12px rgba(0, 0, 0, 0.02);
+  }
+
+  .intro {
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    margin-bottom: 1.5rem;
+  }
+
+  .email-link {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(180deg, #FAF8F5 0%, #F5F3F0 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+  }
+
+  .email-link:hover {
+    text-decoration: none;
+    background: linear-gradient(180deg, #FFFFFF 0%, #FAF8F5 100%);
+    border-color: var(--accent);
+    box-shadow: 0 2px 8px rgba(167, 129, 86, 0.12);
+  }
+
+  .email-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(180deg, #E8E6E3 0%, #DEDAD7 100%);
+    border-radius: 10px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .email-link:hover .email-icon {
+    background: linear-gradient(180deg, var(--accent) 0%, #8F6E48 100%);
+    color: white;
+  }
+
+  .email-text {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .email-arrow {
+    font-size: 1.125rem;
+    color: var(--text-muted);
+    transition: transform 0.2s ease;
+  }
+
+  .email-link:hover .email-arrow {
+    transform: translateX(3px);
+    color: var(--accent);
+  }
+
+  .faq {
+    margin-bottom: 3rem;
+  }
+
+  .faq h2 {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 1.25rem;
+  }
+
+  details {
+    border-bottom: 1px solid var(--border);
+  }
+
+  details:first-of-type {
+    border-top: 1px solid var(--border);
+  }
+
+  summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.125rem 0;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .question {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--text);
+    transition: color 0.15s ease;
+  }
+
+  summary:hover .question {
+    color: var(--accent);
+  }
+
+  .toggle-icon {
+    width: 20px;
+    height: 20px;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .toggle-icon::before,
+  .toggle-icon::after {
+    content: '';
+    position: absolute;
+    background: var(--text-muted);
+    border-radius: 1px;
+    transition: all 0.2s ease;
+  }
+
+  .toggle-icon::before {
+    width: 12px;
+    height: 2px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .toggle-icon::after {
+    width: 2px;
+    height: 12px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  details[open] .toggle-icon::after {
+    transform: translate(-50%, -50%) rotate(90deg);
+    opacity: 0;
+  }
+
+  details[open] .toggle-icon::before {
+    background: var(--accent);
+  }
+
+  .answer {
+    padding-bottom: 1.25rem;
+    animation: slideDown 0.2s ease;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .answer p {
+    font-size: 0.9375rem;
+    color: var(--text-muted);
+    line-height: 1.65;
+    padding-left: 0.5rem;
+    border-left: 2px solid var(--border);
+  }
+
+  .response-note {
+    text-align: center;
+  }
+
+  .response-note p {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  @media (max-width: 480px) {
+    main {
+      padding: 3rem 1.5rem 5rem;
+    }
+
+    header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .contact-card {
+      padding: 1.5rem;
+    }
+
+    .email-link {
+      padding: 0.875rem 1rem;
+    }
+  }
+</style>
