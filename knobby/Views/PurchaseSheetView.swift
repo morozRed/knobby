@@ -108,11 +108,10 @@ struct PurchaseSheetView: View {
                 // Drag indicator
                 dragIndicator
                     .padding(.top, 12)
-
-                Spacer()
+                    .padding(.bottom, 20)
 
                 // Main content
-                VStack(spacing: 32) {
+                VStack(spacing: 28) {
                     // Header
                     headerSection
 
@@ -127,8 +126,7 @@ struct PurchaseSheetView: View {
                 }
                 .padding(.horizontal, 28)
 
-                Spacer()
-                Spacer()
+                Spacer(minLength: 16)
             }
 
             // Loading overlay
@@ -136,7 +134,7 @@ struct PurchaseSheetView: View {
                 loadingOverlay
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.height(480)])
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(32)
         .onAppear {
